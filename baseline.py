@@ -1,4 +1,6 @@
 import math, random
+import numpy as np
+import re
 
 ################################################################################
 # Helper functions
@@ -6,11 +8,25 @@ import math, random
 
 
 def create_ngram_model(model_class, path, n=2, k=0):
-    ''' Creates and returns a new n-gram model trained on the city names
-        found in the path file '''
+    ''' Creates and returns a new n-gram model trained on path file '''
+    """
+    path: numpy file of dimension nx3, columns: artist, genre, lyrics
+    
+    return: updated model of model_class
+    """
     model = model_class(n, k)
-    with open(path, encoding='utf-8', errors='ignore') as f:
-        model.update(f.read())
+    # with open(path, encoding='utf-8', errors='ignore') as f:
+    #     model.update(f.read())
+    file = np.load(path, allow_pickle=True)
+    lyrics = file[:,2]
+    lyrics = '\n'.join(list(lyrics))
+    for i in range(min(len(lyrics), 100000)):
+        # line = lyrics[i]
+        # line = re.sub("\n", " \n ", line)
+        # tokens = line.split(" ")
+        # for t in tokens:
+        model.update(lyrics[i])
+
     return model
 
 def start_pad(n):
@@ -93,10 +109,13 @@ class NgramModel(object):
                 return vocabs[i]
         return vocabs[-1]
 
-    def random_text(self, length):
+    def random_text(self, length, context=None):
         ''' Returns text of the specified character length based on the
             n-grams learned by this model '''
-        context = start_pad(self.n)
+        if context == None:
+            context = start_pad(self.n)
+        else:
+            context = context
         text = ''
         for i in range(length):
             char = self.random_char(context)
@@ -121,4 +140,6 @@ class NgramModel(object):
         return pp
 
 if __name__ == '__main__':
-    m = create_ngram_model(NgramModel, 'shakespeare_input.txt', 2)
+    m = create_ngram_model(NgramModel, 'data/R&B_train.npy', 5, 1)
+    generated_lyrics = m.random_text(200)
+    print(generated_lyrics)

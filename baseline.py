@@ -14,18 +14,15 @@ def create_ngram_model(model_class, path, n=2, k=0):
     
     return: updated model of model_class
     """
+    num_iterations = 500  # number of samples to draw
+    length = 10  # how many lines in one sample
+
     model = model_class(n, k)
-    # with open(path, encoding='utf-8', errors='ignore') as f:
-    #     model.update(f.read())
-    file = np.load(path, allow_pickle=True)
-    lyrics = file[:,2]
-    lyrics = '\n'.join(list(lyrics))
-    for i in range(min(len(lyrics), 100000)):
-        # line = lyrics[i]
-        # line = re.sub("\n", " \n ", line)
-        # tokens = line.split(" ")
-        # for t in tokens:
-        model.update(lyrics[i])
+    with open(path, encoding='utf-8', errors='ignore') as f:
+        lyrics = f.read()
+        for i in range(num_iterations):
+            temp = lyrics_chunks(lyrics, length)
+            model.update(temp)
 
     return model
 
@@ -43,6 +40,20 @@ def ngrams(n, text):
         ngram = (adjusted_txt[i-n:i], adjusted_txt[i])
         gramlist.append(ngram)
     return gramlist
+
+def lyrics_chunks(lyrics, length):
+    """
+    randomly samples lyrics chunks of specified length
+
+    :param lyrics: str, entire lyrics corpus
+    :param length: int, number of lines in one lyrics chunks
+    :return: str, lyric lines joined by new line
+    """
+    lyrics_lines = lyrics.split('\n')
+    start_idx = random.randint(0, len(lyrics_lines)-1)
+    end_idx = min(start_idx+length, len(lyrics_lines))
+    selected_lyrics = lyrics_lines[start_idx:end_idx]
+    return '\n'.join(selected_lyrics)
 
 ################################################################################
 # Model
@@ -115,7 +126,7 @@ class NgramModel(object):
         if context == None:
             context = start_pad(self.n)
         else:
-            context = context
+            context = context[-self.n:]
         text = ''
         for i in range(length):
             char = self.random_char(context)
@@ -140,6 +151,7 @@ class NgramModel(object):
         return pp
 
 if __name__ == '__main__':
-    m = create_ngram_model(NgramModel, 'data/R&B_train.npy', 5, 1)
-    generated_lyrics = m.random_text(200)
+    m = create_ngram_model(NgramModel, 'data/train/jazz_train.txt', 5,0)
+    generated_lyrics = m.random_text(250)
     print(generated_lyrics)
+    print(m.get_vocab())

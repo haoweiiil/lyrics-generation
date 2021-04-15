@@ -1,13 +1,14 @@
 import math, random
 import numpy as np
 import re
+import pandas as pd
 
 ################################################################################
 # Helper functions
 ################################################################################
 
 
-def create_ngram_model(model_class, path, n=2, k=0):
+def create_ngram_model(model_class, path, n=2, k=0, type='csv', genre=None):
     ''' Creates and returns a new n-gram model trained on path file '''
     """
     path: numpy file of dimension nx3, columns: artist, genre, lyrics
@@ -18,11 +19,15 @@ def create_ngram_model(model_class, path, n=2, k=0):
     length = 10  # how many lines in one sample
 
     model = model_class(n, k)
-    with open(path, encoding='utf-8', errors='ignore') as f:
-        lyrics = f.read()
-        for i in range(num_iterations):
-            temp = lyrics_chunks(lyrics, length)
-            model.update(temp)
+    if type == 'txt':
+        with open(path, encoding='utf-8', errors='ignore') as f:
+            lyrics = f.read()
+    else:
+        lyrics = csv_to_text(path, genre)
+
+    for i in range(num_iterations):
+        temp = lyrics_chunks(lyrics, length)
+        model.update(temp)
 
     return model
 
@@ -40,6 +45,14 @@ def ngrams(n, text):
         ngram = (adjusted_txt[i-n:i], adjusted_txt[i])
         gramlist.append(ngram)
     return gramlist
+
+def csv_to_text(path, genre=None):
+    ''' Takes in a csv file and return the lyrics concatenated into one text file'''
+    df = pd.read_csv(path)
+    if genre:
+        df = df[df['Genre']==genre]
+    lyrics = '\n'.join(list(df['Lyrics']))
+    return lyrics
 
 def lyrics_chunks(lyrics, length):
     """
@@ -151,7 +164,6 @@ class NgramModel(object):
         return pp
 
 if __name__ == '__main__':
-    m = create_ngram_model(NgramModel, 'data/train/jazz_train.txt', 5,0)
+    m = create_ngram_model(NgramModel, 'data/csv/train.csv', 5,0, genre='R&B')
     generated_lyrics = m.random_text(250)
     print(generated_lyrics)
-    print(m.get_vocab())

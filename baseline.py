@@ -147,6 +147,24 @@ class NgramModel(object):
             context = context[1:]+char
         return text
 
+    def random_lines(self, num_lines, context=None):
+        ''' Returns specified number of lines based on learned n-grams model'''
+        if context == None:
+            context = start_pad(self.n)
+        else:
+            context = context[-self.n:]
+        text = ''
+        count = 0
+        while True:
+            char = self.random_char(context)
+            if char == '\n':
+                count += 1
+                if count == num_lines:
+                    break
+            text += char
+            context = context[1:] + char
+        return text
+
     def perplexity(self, text,lambdas=None):
         ''' Returns the perplexity of text based on the n-grams learned by
             this model '''
@@ -164,6 +182,6 @@ class NgramModel(object):
         return pp
 
 if __name__ == '__main__':
-    m = create_ngram_model(NgramModel, 'data/csv/train.csv', 5,0, genre='R&B')
-    generated_lyrics = m.random_text(250)
+    m = create_ngram_model(NgramModel, 'data/csv/train.csv', 7, 0.0000001)
+    generated_lyrics = m.random_lines(10)
     print(generated_lyrics)

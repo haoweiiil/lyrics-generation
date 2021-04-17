@@ -24,3 +24,11 @@ Here is a snippet of the data: ![data example 1](/images/preprocessed_df.png)
 After processing, we have total of 192,123 songs. We divide this dataframe into train, dev and test data. The corresponding data are saved into csv.
 
 We keep information regarding genre and artist in the csv files since they might be needed in future model implementation.
+
+### Data Access
+
+In case the submission of full dataset to Gradescope failed, they can alternatively be accessed with the link below. 
+
+* [Train.csv](https://drive.google.com/file/d/1EWA6Vv5hfbg3y-nfzOApAQfgiKs5gLSc/view?usp=sharing)
+* [Dev.csv](https://drive.google.com/file/d/1nTBa39xOLZ-M018G4_P1u8QS-juwingW/view?usp=sharing)
+* [Test.csv](https://drive.google.com/file/d/1KLX-LdphlSYeNCxK7Atf2Sm6U29WwX8p/view?usp=sharing)

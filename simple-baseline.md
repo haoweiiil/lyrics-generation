@@ -24,3 +24,39 @@ We built model on n = \[5, 6, 7\]; we found in our previous homework that n-gram
  
  ## Evaluation Scores 
  In our main analysis, we are mostly concerned with next line lyrics prediction as a measurement of how well our model is understanding the main theme of songs and if it were able to correctly predict the content coming up next.  The ability of n-gram model to predict next line of lyrics based on previous content is understandably limited by length of context in use. But we demonstrate here the performance of simple baseline model, and later compare these scores to more complex neural models.
+
+We use R&B data 7-gram model for next line generation. In the table below are several examples with input data from training data and test data, and their corresponding evaluation metrics score.
+
+1. Training Example 1
+    * Input Lyric (Previous lyric): *The more I know, the less I understand*
+    * Target Lyric (Real next line): *And all the things I thought I'd figured out, I have to learn again* 
+    * Genereate Lyric: *It burns*
+    
+2. Training Example 2
+    * Input Lyric (Previous lyric): *From the rain and storm*
+    * Target Lyric (Real next line): *And even when my enemies pursue me* 
+    * Genereate Lyric: *But you, the cost us back and girl this mark, no love*
+
+3. Test Example 1
+    * Input Lyric (Previous lyric): *What's your name?*
+    * Target Lyric (Real next line): *Girl what's your number?* 
+    * Genereate Lyric: *Jesus, just to me*
+
+4. Test Example 2
+    * Input Lyric (Previous lyric): *This is Christmas, let the world sing*
+    * Target Lyric (Real next line): *Let us all begin to heal* 
+    * Genereate Lyric: *Stays burning back to your tabernacle*
+
+We present below the evaluation score computed using the example above. Additionally we evaluated the model on randomly selected test lyrics tuples, and computed the average score, also shown in the table below.[^1]
+
+|               | Train 1 | Train 2 | Test 1 | Test 2 | Avg. Test |
+|---------------|---------|---------|--------|--------|-----------|
+| Grammar score | 0       | 0       | 0      | 0      | 0.028     |
+| Rhyme         | False   | False   | False  | False  | 0         |
+| Bleu score    | 0       | 2.773   | 0      | 4.354  | 3.335     |
+| Rouge Score   | 0       | 0       | 0      | 0.167  | 0.044     |
+| Bert Score    | 0.825   | 0.830   | 0.827  | 0.821  | 0.814     |
+| Ld score      | 1.0     | 1.0     | 1.0    | 1.0    | 0.987     |
+| Plagiarism    | False   | False   | False  | False  | 0         |
+
+[^1]: For boolean metrics, the average computes the proportion of result that are true.

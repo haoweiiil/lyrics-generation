@@ -13,6 +13,8 @@ from bert_score import score
 from bert_score import plot_example
 from lexical_diversity import lex_div as ld
 import re
+from num2words import num2words
+import requests, json
 
 # Initiate.
 
@@ -20,6 +22,9 @@ tool_en = language_tool_python.LanguageTool("en-US")
 ph = Phyme()
 rouge = Rouge()
 
+word_phone_url = "https://raw.githubusercontent.com/jameswenzel/Phyme/master/Phyme/data/word_phone.json"
+resp = requests.get(word_phone_url)
+word_phone_dict = json.loads(resp.text)
 
 # Grammar.
 
@@ -56,49 +61,71 @@ def check_rhyme_pronouncing(input_text, generated_text, print_list=False):
     return (generated_last in list_of_rhymes) or (generated_last == input_last)
 
 
-def check_rhyme_phyme(input_text, generated_text, include_consonant=False, print_list=False):
+def check_rhyme_phyme(input_text, generated_text, include_consonant=False, print_list=False,
+                      catch_spelling_error=True):
     """
     built based on CMU pronouncing; https://github.com/jameswenzel/Phyme
     better choice then check_rhyme_pronouncing
+    :param catch_spelling_error:
     :param input_text: input text of the lyrics, could be one or two lines
     :param generated_text: output text of the lyrics, one line [subject to change]
     :return: a boolean indicate if the generated line in the rhyme list of the last word of the last input line
     :param include_consonant: consonant is the least rigorous type of rhyme; if false, will not include words here
     :param print_list: print the final list to compare with or not
     """
-    input_text = re.sub(r'[^\w\s]', '', input_text)
-    generated_text = re.sub(r'[^\w\s]', '', generated_text)
+    input_text = re.sub(r"[^\w\d'\s]+", '', input_text)
+    generated_text = re.sub(r"[^\w\d'\s]+",'', generated_text)
 
     input_last = input_text.split(" ")[-1]
     generated_last = generated_text.split(" ")[-1]
 
-    family = ph.get_family_rhymes(input_last)
-    perfect = ph.get_perfect_rhymes(input_last)
-    additive = ph.get_additive_rhymes(input_last)
-    subtractive = ph.get_subtractive_rhymes(input_last)
-    substitution = ph.get_substitution_rhymes(input_last)
-    assonance = ph.get_assonance_rhymes(input_last)
-    consonant = {}
-    if include_consonant:
-        consonant = ph.get_consonant_rhymes(input_last)
+    # check if the last word is a number; if so, find its words equivalence
+    if input_last.isnumeric():
+        input_last = num2words(input_last)
 
-    union = set()
-    for rhyme_dict in [family, perfect, additive, subtractive, substitution, assonance, consonant]:
-        rhyme_lists = [x for sublist in rhyme_dict.values() for x in sublist]
-        union = union | set(rhyme_lists)
-        # print(len(union))
+    if generated_last.isnumeric():
+        generated_last = num2words(generated_text)
 
-    if print_list:
-        print(union)
+    # catch spelling errors
+    if catch_spelling_error:
+        grammar_error = tool_en.check(input_last)
+        if len(grammar_error) != 0:
+            input_last = grammar_error[0].replacements[0]
 
-    return (generated_last in union) | (generated_last == input_last)
+    # get the groups
+    if input_last.upper() in word_phone_dict:
+        family = ph.get_family_rhymes(input_last)
+        perfect = ph.get_perfect_rhymes(input_last)
+        additive = ph.get_additive_rhymes(input_last)
+        subtractive = ph.get_subtractive_rhymes(input_last)
+        substitution = ph.get_substitution_rhymes(input_last)
+        assonance = ph.get_assonance_rhymes(input_last)
+        consonant = {}
+        if include_consonant:
+            consonant = ph.get_consonant_rhymes(input_last)
+
+        union = set()
+        for rhyme_dict in [family, perfect, additive, subtractive, substitution, assonance, consonant]:
+            rhyme_lists = [x for sublist in rhyme_dict.values() for x in sublist]
+            union = union | set(rhyme_lists)
+            # print(len(union))
+
+        if print_list:
+            print(union)
+
+        return (generated_last in union) | (generated_last == input_last)
+
+    else:
+        print("Rhyme word not in dictionary; skip the result.")
+        return np.nan
+
 
 
 # Similarity based evaluations.
 
 def get_bleu_score(reference_text_list, generated_text, uniform_weight, ngram_order=None,
                    weights=(0.25, 0.25, 0.25, 0.25),
-                   smoothing_function=None, auto_reweigh=False, use_token=True):
+                    smoothing_function=None, auto_reweigh=False, use_token=True):
     """
     get bleu score;
     https://github.com/xzfxzfx/lyrics-generation/blob/main/evaluate.ipynb
@@ -295,7 +322,7 @@ def run_evaluations(input_text, reference_text_list, generated_text):
         'grammar_score': get_grammar_score(generated_text, tool_en),
         'rhyme': check_rhyme_phyme(input_text, generated_text),
         'bleu_score': get_bleu_score(reference_text_list, generated_text, uniform_weight=True),
-        'rouge_score': get_summary_rouge_score(reference_text_list, generated_text),
+        'rouge_score': get_summary_rouge_score(reference_text_list, generated_text, summary_type="max"),
         'bert_score': get_summary_bert_score(reference_text_list, generated_text, summary_type="max"),
         'ld_score': get_lexical_diversity(generated_text),
         'plagiarism': check_plagiarism(reference_text_list, generated_text)

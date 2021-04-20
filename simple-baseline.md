@@ -47,7 +47,7 @@ We use R&B data 7-gram model for next line generation. In the table below are se
     * Target Lyric (Real next line): *Let us all begin to heal* 
     * Genereate Lyric: *Stays burning back to your tabernacle*
 
-We present below the evaluation score computed using the example above. Additionally we evaluated the model on randomly selected test lyrics tuples, and computed the average score, also shown in the table below.[^1]
+We present below the evaluation score computed using the example above. Additionally we evaluated the model on randomly selected test lyrics tuples, and computed the average score, also shown in the table below. For boolean metrics, the average computes the proportion of result that are true.
 
 |               | Train 1 | Train 2 | Test 1 | Test 2 | Avg. Test |
 |---------------|---------|---------|--------|--------|-----------|
@@ -58,5 +58,3 @@ We present below the evaluation score computed using the example above. Addition
 | Bert Score    | 0.825   | 0.830   | 0.827  | 0.821  | 0.814     |
 | Ld score      | 1.0     | 1.0     | 1.0    | 1.0    | 0.987     |
 | Plagiarism    | False   | False   | False  | False  | 0         |
-
-[^1]: For boolean metrics, the average computes the proportion of result that are true.

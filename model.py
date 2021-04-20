@@ -66,34 +66,33 @@ class CharBiLSTM(nn.Module):
         return self.get_all_hiddens(input, seq_lengths)
 
 # https://github.com/jiesutd/NCRFpp/blob/master/model/wordrep.py
-class wordRep(nn.Module):
-    def __init__(self, spec_dict, char_hidden_dim, char_emb_dim, char_model_type, word_vocab_size, word_emb_dim,
-                 pre_train_word_embedding, feature_emb_dim, use_artist, dropout):
-        super(wordRep, self).__init__()
-        self.char_hidden_dim = char_hidden_dim
-        self.char_embedding_dim = char_emb_dim
+class WordRep(nn.Module):
+    def __init__(self, spec_dict):
+        super(WordRep, self).__init__()
+        self.char_hidden_dim = spec_dict["char_hidden_dim"]
+        self.char_embedding_dim = spec_dict["char_emb_dim"]
 
-        if char_model_type == 'LSTM':
+        if spec_dict["char_model_type"] == 'LSTM':
             self.char_feature = CharBiLSTM(spec_dict['char_vocab_size'], self.char_embedding_dim,
-                                           self.char_hidden_dim, dropout)
-            self.ph_feature = CharBiLSTM(spec_dict['ph_size'], self.char_embedding_dim, self.char_hidden_dim, dropout)
-        self.embedding_dim = word_emb_dim
-        self.drop = nn.Dropout(dropout)
-        self.word_embedding = nn.Embedding(word_vocab_size, self.embedding_dim)
-        if pre_train_word_embedding is not None:
-            self.word_embedding.weight.data.copy_(torch.from_numpy(pre_train_word_embedding))
+                                           self.char_hidden_dim, spec_dict["dropout"])
+            self.ph_feature = CharBiLSTM(spec_dict['ph_size'], self.char_embedding_dim, self.char_hidden_dim, spec_dict["dropout"])
+        self.embedding_dim = spec_dict["word_emb_dim"]
+        self.drop = nn.Dropout(spec_dict["dropout"])
+        self.word_embedding = nn.Embedding(spec_dict["word_vocab_size"], self.embedding_dim)
+        if spec_dict["pre_train_word_embedding"] is not None:
+            self.word_embedding.weight.data.copy_(torch.from_numpy(spec_dict["pre_train_word_embedding"]))
         else:
-            self.word_embedding.weight.data.copy_(torch.from_numpy(self.random_embedding(word_vocab_size, self.embedding_dim)))
+            self.word_embedding.weight.data.copy_(torch.from_numpy(self.random_embedding(spec_dict["word_vocab_size"], self.embedding_dim)))
 
         # artist embedding
-        self.use_artist = use_artist
-        if use_artist:
-            self.artist_emb_dim = feature_emb_dim
+        self.use_artist = spec_dict["use_artist"]
+        if self.use_artist:
+            self.artist_emb_dim = spec_dict["feature_emb_dim"]
             self.artist_embedding = nn.Embedding(spec_dict['artist_size'], self.artist_emb_dim)
             self.artist_embedding.weight.data.copy_(torch.from_numpy(self.random_embedding(spec_dict['artist_size'],
                                                                                            self.artist_emb_dim)))
         # genre embedding
-        self.genre_emb_dim = feature_emb_dim
+        self.genre_emb_dim = spec_dict["feature_emb_dim"]
         self.genre_embedding = nn.Embedding(spec_dict['genre_size'], self.genre_emb_dim)
         self.genre_embedding.weight.data.copy_(torch.from_numpy(self.random_embedding(spec_dict['genre_size'],
                                                                                        self.genre_emb_dim)))
@@ -141,10 +140,51 @@ class wordRep(nn.Module):
 
 # https://github.com/jiesutd/NCRFpp/blob/master/model/wordsequence.py
 class WordSequence(nn.Module):
-    def __init__(self, spec_dict, dropout, num_lstm_layer, bilstm_flag=True):
+    def __init__(self, spec_dict):
         super(WordSequence, self).__init__()
+        self.droplstm = nn.Dropout(spec_dict['dropout'])
         self.use_artist = spec_dict['use_artist']
+        self.bilstm_flag = spec_dict['bilstm_flag']
+        self.wordrep = WordRep(spec_dict)
+        self.input_size = spec_dict['word_emb_dim']
+        self.input_size += spec_dict['char_hidden_dim']
+        self.input_size += spec_dict['feature_emb_dim']
+        self.lstm_layers = spec_dict['num_lstm_layers']
+        if spec_dict['use_artist']:
+            self.input_size += spec_dict['feature_emb_dim']
+        if self.bilstm_flag:
+            lstm_hidden = spec_dict["final_hidden_dim"] // 2
+        else:
+            lstm_hidden = spec_dict["final_hidden_dim"]
 
+        # build word-level lstm
+        self.lstm = nn.LSTM(self.input_size, lstm_hidden, num_layers=self.lstm_layers, batch_first=True,
+                            bidirectional=self.bilstm_flag)
+        self.hidden2tag = nn.Linear(spec_dict["final_hidden_dim"], spec_dict['word_vocab_size'])
+
+    def forward(self,word_inputs, genre_input, artist_input, word_seq_lengths, char_inputs, char_seq_lengths, char_seq_recover):
+        """
+        input
+            :param word_inputs: (batch_size, sent_len)
+            :param genre_input: (batch_size, 1)
+            :param artist_input: None or (batch_size, 1)
+            :param word_seq_lengths: (batch_size, 1)
+            :param char_inputs: (batch_size*sent_len, word_length)
+            :param char_seq_lengths: (batch_size*sent_len, 1)
+            :param char_seq_recover: variable which records the char order information, used to recover char order
+        output
+            :return: Variable(batch_size, sent_len, word_vocab_size)
+        """
+        word_represent = self.wordrep(word_inputs, genre_input, artist_input, word_seq_lengths, char_inputs, char_seq_lengths, char_seq_recover)
+        packed_words = pack_padded_sequence(word_represent, word_seq_lengths.numpy(), True)
+        hidden = None
+        lstm_out, hidden = self.lstm(packed_words, hidden)
+        lstm_out, _ = pad_packed_sequence(lstm_out)
+        ## lstm_out (seq_len, seq_len, hidden_size)
+        feature_out = self.droplstm(lstm_out.transpose(1,0))
+        ## feature_out (batch_size, seq_len, hidden_size)
+        outputs = self.hidden2tag(feature_out)
+        return outputs
 
 if __name__ == "__main__":
     spec_dict = {"char_vocab_size":100,
@@ -154,4 +194,12 @@ if __name__ == "__main__":
                  "dropout": 0.5,
                  "num_lstm_layer": 2,
                  "bilstm_flag": True,
-                 "use_artist": False}
+                 "use_artist": False,
+                 "char_hidden_dim": 128,
+                 "char_emb_dim": -1,
+                 "char_model_type": "LSTM",
+                 "word_vocab_size": -1,
+                 "word_emb_dim": 128,
+                 "pre_train_word_embedding": None,
+                 "feature_emb_dim": 128,
+                 "final_hidden_dim": 512}

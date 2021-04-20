@@ -33,7 +33,8 @@ def get_pronounce(s):
     ph_list = wordbreak(s)[0]
     return list(map(lambda x: re.sub('[^a-zA-Z]+$','',x), ph_list))
 
-
+def get_artist(seq_len, artist):
+    return [artist]*seq_len
 
 if __name__ == "__main__":
     print(get_pronounce('seaya'))

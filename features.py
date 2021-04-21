@@ -1,6 +1,11 @@
 import nltk
 from itertools import product as iterprod
 import re
+from num2words import num2words
+import string
+
+all_characters = string.printable
+n_character = len(all_characters)
 
 # download cmudict
 try:
@@ -35,6 +40,37 @@ def get_pronounce(s):
 
 def get_artist(seq_len, artist):
     return [artist]*seq_len
+
+def lyric_to_tensor(s):
+    ''' returns word-level and char-level tensor '''
+    word_tokens = s.split()
+    word_tokens = [input_format_check(t) for t in word_tokens]
+    # TODO: encode word vocab
+
+    # TODO: convert every word to char representation
+    char_idx = []
+    for word in word_tokens:
+        char_idx.append([all_characters.index(char) for char in word])
+
+
+def lyric_to_phones(s):
+    '''returns 2d list, (sent_len, varying length of phones)'''
+    # TODO: complete
+
+def input_format_check(s):
+    '''
+    takes in a word token,
+    returns: empty string if it's punctuation, convert number to text,
+    strip punctuation other than apostrophe  '''
+    if s.isnumeric():
+        return num2words(s)
+    elif s.isalpha():
+        return s
+    elif re.search("[^a-zA-Z0-9']|(^')|('$)", s):
+        return re.sub("[^a-zA-Z0-9']|(^')|('$)", "", s)
+    else:
+        print("Manually check input type: ", s)
+        return s
 
 if __name__ == "__main__":
     print(get_pronounce('seaya'))

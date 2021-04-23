@@ -20,27 +20,17 @@ uniq_phones = cmudict.symbols()
 artist_list = []
 genre_list = []
 
-
-# def tokenize_corpus(df, tokenizer):
-#     ''' Takes entire corpus as a string and return word to index, and list of words
-#         :returns word2idx, unique_words, word_vocab_len'''
-#     lyrics = '\n'.join(df['Lyrics'])
-#     corp_lower = corp.lower()
-#     tokens = tokenizer(corp_lower)
-#     clean_tokens = [input_format_check(t) for t in tokens]
-#     unique_words = list(set(clean_tokens))
-#     word2idx = {w: i+1 for i, w in enumerate(unique_words)}
-#     # TODO: how to incorporate <UNK>
-#     unique_words.append('<UNK>')
-#     word_vocab_len = len(unique_words)
-#
-#     return word2idx, unique_words, word_vocab_len
-
 # https://stackoverflow.com/questions/33666557/get-phonemes-from-any-word-in-python-nltk-or-other-modules
 # https://en.wikipedia.org/wiki/ARPABET
 def wordbreak(s):
     ''' returns a list of list pronouncing according to cmudict, applies partitioning for words not in dictionary'''
     s = s.lower()
+    # if doesn't contain alphabet, return unknown
+    # unknown phone handled in dictionary
+    if not re.search("[a-zA-Z]", s):
+        return [['<UNK>']]
+    # strip non-alphabetic character
+    s = re.sub("[^a-z]", "", s)
     if s in phones_dict:
         return phones_dict[s]
     middle = len(s)/2
@@ -107,8 +97,8 @@ def input_format_check(s):
         return num2words(s)
     elif s.isalpha():
         return s
-    elif re.search("[^a-zA-Z0-9']|(^')|('$)", s):
-        return re.sub("[^a-zA-Z0-9']|(^')|('$)", "", s)
+    elif re.search("(^')|('$)", s) and len(s) > 1:
+        return re.sub("(^')|('$)", "", s)
     else:
         # print("Manually check input type: ", s)
         return s
@@ -117,7 +107,9 @@ def input_format_check(s):
 
 if __name__ == "__main__":
     # print(lyric_to_phones('I will go'))
-    ph_list = wordbreak("i'm")
-    if len(np.array(ph_list).shape) > 1:
-        ph_list = sum(ph_list, [])
+    ph_list = wordbreak("givin'")
+    # if len(np.array(ph_list).shape) > 1:
+    #     ph_list = ph_list[0]
+    # if isinstance(ph_list[0], list):
+    #     ph_list = ph_list[0]
     print(ph_list)

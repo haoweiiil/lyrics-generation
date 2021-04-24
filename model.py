@@ -199,20 +199,6 @@ class WordSequence(nn.Module):
         outputs = self.hidden2tag(feature_out)
         return outputs
 
-    def get_last_hidden(self, word_inputs, genre_input, artist_input, word_seq_lengths, char_inputs, char_seq_lengths, char_seq_recover,
-                ph_inputs, ph_seq_lengths, ph_seq_recover):
-        word_represent = self.wordrep(word_inputs, genre_input, artist_input, word_seq_lengths, char_inputs,
-                                      char_seq_lengths, char_seq_recover, ph_inputs, ph_seq_lengths, ph_seq_recover)
-        packed_words = pack_padded_sequence(word_represent, word_seq_lengths.numpy(), True)
-        hidden = None
-        lstm_out, hidden = self.lstm(packed_words, hidden)
-        lstm_out, _ = pad_packed_sequence(lstm_out)
-        ## lstm_out (seq_len, seq_len, hidden_size)
-        feature_out = self.droplstm(lstm_out.transpose(1, 0))
-        ## feature_out (batch_size, seq_len, hidden_size)
-        outputs = self.hidden2tag(feature_out)
-        outputs = outputs[:,-1,:] # take the last element in seq
-        return outputs
 
 if __name__ == "__main__":
     spec_dict = {"ph_size": 39,

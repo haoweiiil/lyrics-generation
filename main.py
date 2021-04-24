@@ -4,29 +4,67 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 
 
-def predict(model, dataset, num_lines = 2):
-    result = gen_input(dataset, num_lines=num_lines, if_train=False)
+def predict(model, dataset, num_lines = 2, gen_line = 1):
+    ''' takes in trained model, and generate gen_line numbers of new lines'''
+    pred_next_line = ''
 
-    # TODO: feed into model, and generate until new line character
-    return None
+    # gen_input should produce a new line as target if not in training, including new line character
+    inp, target, artist, genre = dataset.random_training_chunks(num_lines)
+    input_list = gen_input(inp, target, artist, genre, if_train=False)
+    res = batchify_sequence_labeling(input_list, False)
+    (word_seq_tensor, feature_seq_tensors, word_seq_lengths, word_seq_recover, char_seq_tensor, char_seq_lengths,
+     char_seq_recover, ph_inputs, ph_seq_lengths, ph_seq_recover, target_seq_tensor, mask) = res
+    batch_size = word_seq_tensor.size(0)
+    seq_len = word_seq_tensor.size(1)
 
-def gen_input(ds, batch_size = 1, num_lines = 2, if_train=True):
+    # set in eval mode
+    model.eval()
+    # feed into model, and generate until new line character
+    while True:
+        genre_input = feature_seq_tensors[1]
+        artist_input = feature_seq_tensors[0]
+        outs = model(word_seq_tensor, genre_input, artist_input, word_seq_lengths, char_seq_tensor, char_seq_lengths, char_seq_recover,
+                ph_inputs, ph_seq_lengths, ph_seq_recover)
+        outs = outs.view(batch_size * seq_len, -1)
+        score = F.log_softmax(outs, 1)
+        _, pred = torch.max(score, 1)
+        pred = pred.view(batch_size, seq_len)
+        # find the corresponding word
+        decoded_str = decode_lyrics(dataset, pred[0])
+        pred_word = decoded_str[-1]
+        # append predicted word
+        pred_next_line += pred_word
+        # stop if next hit new line character
+        if pred_word == '\n':
+            break
+        # use new sentence as input to model
+        target += inp[-1]
+        inp += pred_word
+        input_list = gen_input(inp, target, artist, genre, if_train=False)
+        res = batchify_sequence_labeling(input_list, False)
+        (word_seq_tensor, feature_seq_tensors, word_seq_lengths, word_seq_recover, char_seq_tensor, char_seq_lengths,
+         char_seq_recover, ph_inputs, ph_seq_lengths, ph_seq_recover, target_seq_tensor, mask) = res
+        batch_size = word_seq_tensor.size(0)
+        seq_len = word_seq_tensor.size(1)
+
+    return pred_next_line
+
+def gen_input(inp, target, artist, genre, batch_size = 1, if_train=True):
     ''' Takes in dataset object, return randomly sampled lines, converted to batchified tensors'''
     batches = []
     # TODO: handle batch_size > 1
-    inp, target, artist, genre = ds.random_training_chunks(num_lines)
     # print(inp)
     # print(target)
+
     word, char, ph = ds.lyric_to_idx(inp)
     input_list = [[word], [char], [ph]]
     features = [ds.get_artist_genre(len(word), artist, genre)]
+
     target = [ds.lyric_to_idx(target, False)]
     input_list.append(features)
     input_list.append(target)
 
-    result = batchify_sequence_labeling(input_list, if_train)
-
-    return result
+    return input_list
 
 def decode_lyrics(dataset, tensor):
     ''' convert word tensor to string '''
@@ -151,7 +189,7 @@ def calculate_loss(model, word_inputs, feature_inputs, word_seq_lengths, char_in
 
     return total_loss, pred
 
-def train(dataset, spec_dict):
+def train(dataset, spec_dict, num_lines = 2):
     lr = 0.001
     model = WordSequence(spec_dict, dataset)
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -161,7 +199,9 @@ def train(dataset, spec_dict):
         model.train()
         model.zero_grad()
         # sample lines from dataset
-        res = gen_input(dataset)
+        inp, target, artist, genre = ds.random_training_chunks(num_lines)
+        input_list = gen_input(inp, target, artist, genre)
+        res = batchify_sequence_labeling(input_list, True)
         (word_seq_tensor, feature_seq_tensors, word_seq_lengths, word_seq_recover, char_seq_tensor, char_seq_lengths,
          char_seq_recover, phone_seq_tensor, phone_seq_lengths, phone_seq_recover, target_seq_tensor, mask) = res
         loss, pred = calculate_loss(model, res[0],res[1],res[2],res[4],res[5],res[6],res[7],res[8],res[9],res[10], res[11])
@@ -175,7 +215,7 @@ def train(dataset, spec_dict):
         model.zero_grad()
 
     print("decoded string: ", decode_lyrics(dataset, pred[0]))
-    return loss_list
+    return model, loss_list
 
 if __name__ == "__main__":
     spec_dict = {"ph_size": 39,
@@ -194,7 +234,7 @@ if __name__ == "__main__":
     ds = Dataset('./data/csv/train.csv', subset=['R&B'])
     vocab_size = ds.tokenize_corpus(word_tokenize)
     print("Successfully built dataset...")
-    loss_list = train(ds, spec_dict)
+    model, loss_list = train(ds, spec_dict)
     plt.plot(loss_list)
     plt.show()
 

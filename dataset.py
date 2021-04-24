@@ -119,8 +119,10 @@ class Dataset(torch.utils.data.Dataset):
 
         return word_idx, char_idx, ph_idx
 
-    def random_training_chunks(self, num_lines = 5):
+    def random_lyric_chunks(self, num_lines = 5):
         ''' randomly select chunks of lines
+            if_train == True, then input and target are off by one character,
+            if_train == False, target is the last line in generation
             returns: input_line, target_line, artist, genre'''
 
         # sample a random song

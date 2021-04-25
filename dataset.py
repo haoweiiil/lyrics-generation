@@ -10,12 +10,12 @@ class Dataset(torch.utils.data.Dataset):
     def __init__(self, filepath, subset=None):
         # data
         df = pd.read_csv(filepath)
+        self.genre_list = df['Genre'].values
+        self.artist_list = df['Artist'].values
         if subset is not None:
             df = df[df['Genre'].apply(lambda x: x in subset)]
 
         self.lyrics_list = df['Lyrics'].values
-        self.artist_list = df['Artist'].values
-        self.genre_list = df['Genre'].values
         # chars
         self.all_characters = string.printable
         self.char_vocab_size = len(self.all_characters)
@@ -81,6 +81,7 @@ class Dataset(torch.utils.data.Dataset):
                 ph_idx_List: list, (sent_len, diff_ph_len)
         """
         ## word_token_list: (batch_size, sent_len)
+        line = line.strip(" ")
         word_token_list = re.split("[ ]+", line)
 
         word_token = [input_format_check(t) for t in word_token_list]
@@ -119,19 +120,32 @@ class Dataset(torch.utils.data.Dataset):
 
         return word_idx, char_idx, ph_idx
 
-    def random_lyric_chunks(self, num_lines = 5):
+    def random_lyric_chunks(self, path="data/csv/train.csv", subset=["R&B"], num_lines = 2, if_train = True):
         ''' randomly select chunks of lines
+            path: allows training and test file
             if_train == True, then input and target are off by one character,
             if_train == False, target is the last line in generation
             returns: input_line, target_line, artist, genre'''
+        df = pd.read_csv(path)
+        if subset is not None:
+            df = df[df['Genre'].apply(lambda x: x in subset)]
+
+        curr_lyrics_list = df['Lyrics'].values
+        curr_artist_list = df['Artist'].values
+        curr_genre_list = df['Genre'].values
+        next_line = ''
+
+        # if in valuation, add one more line as reference for next line prediction
+        if not if_train:
+            num_lines += 1
 
         # sample a random song
         while True:
-            rand_song = random.randint(0, len(self.lyrics_list)-1)
-            lyrics = self.lyrics_list[rand_song]
+            rand_song = random.randint(0, len(curr_lyrics_list)-1)
+            lyrics = curr_lyrics_list[rand_song]
             lyric_lines = lyrics.split("\n")
-            artist = self.artist_list[rand_song]
-            genre = self.genre_list[rand_song]
+            artist = curr_artist_list[rand_song]
+            genre = curr_genre_list[rand_song]
             mod_lyric_lines = []
             # remove empty lines
             for line in lyric_lines:
@@ -145,13 +159,23 @@ class Dataset(torch.utils.data.Dataset):
         while True:
             lyric_idx = random.randint(0,len(mod_lyric_lines)-num_lines-1)
             selected_lines = mod_lyric_lines[lyric_idx:(lyric_idx+num_lines)]
+            # if in evaluation
+            if not if_train:
+                next_line = selected_lines[-1]  # reference for next line prediction
+                selected_lines = selected_lines[:-1]
             selected_str = '\n'.join(selected_lines)
             # strip leading and trailing new line character
-            selected_str = re.sub('([,.!?()\n])', r' \1 ', selected_str)
+            selected_str = re.sub('([,.\-!?()\n])', r' \1 ', selected_str)
             selected_str = selected_str.strip()
             word_tokens = re.split("[ ]+", selected_str)
             input_chunk = word_tokens[:-1]
             target_chunk = word_tokens[1:]
+            # if in evaluation, use the complete input sequence
+            if not if_train:
+                # input line of evaluation should end with new line character
+                word_tokens.append('\n')
+                input_chunk = word_tokens
+                target_chunk = word_tokens
             if len(word_tokens) > 2:
                 break
 
@@ -164,13 +188,13 @@ class Dataset(torch.utils.data.Dataset):
         assert input_line != ''
         assert target_line != ''
 
-        return input_line, target_line, artist, genre
+        return input_line, target_line, artist, genre, next_line
 
 
 if __name__ == "__main__":
     ds = Dataset('./data/csv/train.csv', subset=['R&B'])
     vocab_size = ds.tokenize_corpus(word_tokenize)
-    print(ds.unique_words[-1])
+    # print(ds.unique_words[-1])
     # print(vocab_size)
     # wt, sl, ct, wl = ds.lyric_to_tensor("I will go to dinner")
     # print(ds.lyric_to_phones("I'm going to dinner"))
@@ -181,62 +205,11 @@ if __name__ == "__main__":
     # input_list.append(features)
     # input_list.append(target)
     # result = ds.batchify_sequence_labeling(input_list)
-    inp, target, artist, genre = ds.random_training_chunks(1)
+    inp, target, artist, genre, next_line = ds.random_lyric_chunks(path = "data/csv/train.csv", subset=["R&B"], num_lines= 2, if_train=False)
     print(inp)
     print(target)
-    print(artist)
+    print(next_line)
+    print("index of new line: ", ds.word2idx['\n'])
+    print(ds.lyric_to_idx(inp, False))
+    # print(ds.genre_set)
 
-
-
-# def lyric_to_tensor(self, s):
-#     """
-#     :param s: string, lyrics
-#     :return: word_tensor, (
-#     """
-#     word_tokens = s.split()
-#     word_tokens = [input_format_check(t) for t in word_tokens]
-#     word_idx_list = []
-#     for word in word_tokens:
-#         if word.lower() in self.word2idx:
-#             word_idx_list.append(self.word2idx[word.lower()])
-#         else:
-#             word_idx_list.append(self.word_vocab_size-1) # last index reserved for <UNK>
-#     word_tensor = torch.Tensor(word_idx_list).contiguous().view(-1,1)
-#     sent_len = len(word_tokens)
-#
-#     # convert every word to char representation
-#     char_idx = []
-#     word_len = []
-#     for word in word_tokens:
-#         char_list = [all_characters.index(char) for char in word]
-#         word_len.append(len(word))
-#         char_idx.append(torch.FloatTensor(char_list))
-#     char_tensor = torch.nn.utils.rnn.pad_sequence(char_idx, batch_first=True)
-#     word_len = np.array(word_len)
-#
-#     return word_tensor, sent_len, char_tensor, word_len
-
-# def lyric_to_phones(self, s):
-#     '''returns:
-#             padded tensor, (sent_len, phones_list_len)
-#             seq_len, num of phones in each word, np array of dim (word, 1)'''
-#     word_tokens = s.split()
-#     word_tokens = [input_format_check(t) for t in word_tokens]
-#
-#     phone_list = []
-#     seq_len = []
-#     for word in word_tokens:
-#         ph_list = wordbreak(word)
-#         # if word is split into multiple tokens by cmudict
-#         if len(np.array(ph_list).shape) > 1:
-#             ph_list = sum(ph_list, [])
-#         try:
-#             ph_idx_list = [self.phones2index[ph] for ph in ph_list]
-#             phone_list.append(torch.Tensor(ph_idx_list))
-#             seq_len.append(len(ph_idx_list))
-#         except:
-#             print("Phones not found in CMU dictionary")
-#
-#     phone_tensor = torch.nn.utils.rnn.pad_sequence(phone_list, batch_first=True)
-#
-#     return phone_tensor, np.array(seq_len)

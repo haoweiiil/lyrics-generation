@@ -43,50 +43,17 @@ def wordbreak(s):
     return [[]]
 
 # https://github.com/cmusphinx/cmudict/blob/master/cmudict.phones
-def get_phones(s):
-    ''' takes a word and returns a tensor of its phones index in cmudict '''
-    ph_list = wordbreak(s)[0]
-    ph_list = sum(ph_list, [])
-    tensor = torch.zeros(len(ph_list)).long()
-    for i in range(len(ph_list)):
-        tensor[i] = uniq_phones.index(ph_list[i])
-    return tensor
+# def get_phones(s):
+#     ''' takes a word and returns a tensor of its phones index in cmudict '''
+#     ph_list = wordbreak(s)[0]
+#     ph_list = sum(ph_list, [])
+#     tensor = torch.zeros(len(ph_list)).long()
+#     for i in range(len(ph_list)):
+#         tensor[i] = uniq_phones.index(ph_list[i])
+#     return tensor
 
-def get_artist(seq_len, artist):
-    return [artist]*seq_len
-
-def lyric_to_tensor(word2idx, s):
-    ''' returns word-level and char-level tensor '''
-    word_tokens = s.split()
-    word_tokens = [input_format_check(t) for t in word_tokens]
-    word_idx_list = []
-    for word in word_tokens:
-        if word.lower() in word2idx:
-            word_idx_list.append(word2idx[word.lower()])
-        else:
-            word_idx_list.append()
-
-    # convert every word to char representation
-    char_idx = []
-    word_len = []
-    for word in word_tokens:
-        char_list = [all_characters.index(char) for char in word]
-        word_len.append(len(word))
-        char_idx.append(torch.FloatTensor(char_list))
-    char_tensor = torch.nn.utils.rnn.pad_sequence(char_idx, batch_first=True)
-    word_len = np.array(word_len)
-
-
-def lyric_to_phones(s):
-    '''returns padded tensor, (sent_len, phones_list_len)'''
-    word_tokens = s.split()
-    word_tokens = [input_format_check(t) for t in word_tokens]
-
-    phone_list = [get_phones(word) for word in word_tokens]
-
-    phone_tensor = torch.nn.utils.rnn.pad_sequence(phone_list, batch_first=True)
-
-    return phone_tensor
+# def get_artist(seq_len, artist):
+#     return [artist]*seq_len
 
 def input_format_check(s):
     '''

@@ -42,8 +42,8 @@ def predict(model, dataset, num_lines = 2, gen_line = 1):
         if pred_word == '\n':
             break
         # use new sentence as input to model
-        target += inp[:-1]
         inp = inp + ' '+pred_word
+        target = inp # target word is not used in evaluation
         print("full word")
         input_list = gen_input(dataset, inp, target, artist, genre, if_train=False)
         res = batchify_sequence_labeling(input_list, False)
@@ -218,9 +218,9 @@ def train(dataset, spec_dict, num_lines = 2):
             loss_list.append(tot_loss/spec_dict["plot_every"])
             tot_loss = 0
         if (i+1) % spec_dict["print_every"] == 0:
-            print("Input string: ",word_seq_tensor)
+            print("Input string: ", inp)
             print("Target string: ", target)
-            print(pred)
+            print("prediced tensor: ", pred)
             print("decoded string: ", decode_lyrics(dataset, pred[0]))
         loss.backward()
         optimizer.step()
@@ -240,8 +240,8 @@ if __name__ == "__main__":
                  "pre_train_word_embedding": None,
                  "feature_emb_dim": 128,
                  "final_hidden_dim": 512,
-                 "iterations": 1000,
-                 "print_every": 100,
+                 "iterations": 5000,
+                 "print_every": 500,
                  "plot_every": 50}
     ds = Dataset('./data/csv/train.csv', subset=['R&B'])
     vocab_size = ds.tokenize_corpus(word_tokenize)

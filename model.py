@@ -153,7 +153,7 @@ class WordSequence(nn.Module):
         super(WordSequence, self).__init__()
         self.droplstm = nn.Dropout(spec_dict['dropout'])
         self.use_artist = spec_dict['use_artist']
-        self.bilstm_flag = spec_dict['bilstm_flag']
+        self.bilstm_flag = spec_dict['word_bilstm_flag']
         self.wordrep = WordRep(spec_dict, dataset)
         self.input_size = spec_dict['word_emb_dim']
         # char emb
@@ -189,6 +189,7 @@ class WordSequence(nn.Module):
             :return: Variable(batch_size, sent_len, word_vocab_size)
         """
         word_represent = self.wordrep(word_inputs, genre_input, artist_input, word_seq_lengths, char_inputs, char_seq_lengths, char_seq_recover,ph_inputs, ph_seq_lengths, ph_seq_recover)
+
         packed_words = pack_padded_sequence(word_represent, word_seq_lengths.numpy(), True)
         hidden = None
         lstm_out, hidden = self.lstm(packed_words, hidden)

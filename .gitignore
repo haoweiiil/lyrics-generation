@@ -335,6 +335,10 @@ Backup of *.doc*
 
 # data folder
 data
+saved_data
+
+# saved models
+*.pt
 
 # image folder
 #images

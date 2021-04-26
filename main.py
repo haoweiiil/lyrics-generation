@@ -36,7 +36,7 @@ def predict(model, dataset, num_lines = 2, gen_line = 1):
         # find the corresponding word
         pred_word = dataset.idx2word[pred]
         # append predicted word
-        pred_next_line += pred_word
+        pred_next_line  = pred_next_line + ' ' + pred_word
         # stop if next hit new line character
         print(pred_word)
         if pred_word == '\n':
@@ -187,16 +187,20 @@ def calculate_loss(model, word_inputs, feature_inputs, word_seq_lengths, char_in
     outs = model(word_inputs, genre_input, artist_input, word_seq_lengths, char_inputs, char_seq_lengths, char_seq_recover, ph_inputs, ph_seq_lengths, ph_seq_recover)
     loss_function = nn.NLLLoss(ignore_index=0)
     outs = outs.view(batch_size*seq_len, -1)
+    # take the last word and compute loss
+    # outs = outs[-1,].view(1,-1)
     score = F.log_softmax(outs, 1)
-    total_loss = loss_function(score, target_seq.view(batch_size*seq_len))
+    total_loss = loss_function(score, target_seq.view(batch_size * seq_len))
+    # total_loss = loss_function(score, target_seq.view(batch_size*seq_len)[-1].view(1))
     _, pred = torch.max(score, 1)
     pred = pred.view(batch_size, seq_len)
+    # pred = pred.view(batch_size, 1)
 
     return total_loss, pred
 
-def train(dataset, spec_dict, num_lines = 2):
+def train(model, dataset, spec_dict, num_lines = 2):
     lr = 0.001
-    model = WordSequence(spec_dict, dataset)
+    # model = WordSequence(spec_dict, dataset)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_list = []
     tot_loss = 0
@@ -206,7 +210,8 @@ def train(dataset, spec_dict, num_lines = 2):
         model.train()
         model.zero_grad()
         # sample lines from dataset
-        inp, target, artist, genre, next_line = dataset.random_lyric_chunks(path = "data/csv/train.csv", subset=["R&B"], num_lines=num_lines)
+        # inp, target, artist, genre, next_line = dataset.random_lyric_chunks(path = "data/csv/train.csv", subset=["R&B"], num_lines=num_lines)
+        inp, target, artist, genre = dataset.random_song(path = "data/csv/train.csv", subset=["R&B"], num_lines=5)
         input_list = gen_input(dataset, inp, target, artist, genre)
         res = batchify_sequence_labeling(input_list, True)
         (word_seq_tensor, feature_seq_tensors, word_seq_lengths, word_seq_recover, char_seq_tensor, char_seq_lengths,
@@ -218,6 +223,7 @@ def train(dataset, spec_dict, num_lines = 2):
             loss_list.append(tot_loss/spec_dict["plot_every"])
             tot_loss = 0
         if (i+1) % spec_dict["print_every"] == 0:
+            print("loss in current iteration: ", loss.item())
             print("Input string: ", inp)
             print("Target string: ", target)
             print("prediced tensor: ", pred)
@@ -229,20 +235,23 @@ def train(dataset, spec_dict, num_lines = 2):
     return model, loss_list
 
 if __name__ == "__main__":
-    spec_dict = {"dropout": 0.5,
+    spec_dict = {"dropout": 0.7,
                  "num_lstm_layers": 2,
                  "bilstm_flag": True,
+                 "word_bilstm_flag": False,
                  "use_artist": True,
                  "char_hidden_dim": 128,
-                 "char_emb_dim": 50,
+                 "char_emb_dim": 100,
                  "char_model_type": "LSTM",
-                 "word_emb_dim": 128,
+                 "word_emb_dim": 256,
                  "pre_train_word_embedding": None,
                  "feature_emb_dim": 128,
                  "final_hidden_dim": 512,
-                 "iterations": 5000,
-                 "print_every": 500,
-                 "plot_every": 50}
+                 "learning rate": 0.001,
+                 "iterations": 2500,
+                 "print_every": 250,
+                 "plot_every": 50
+                 }
     ds = Dataset('./data/csv/train.csv', subset=['R&B'])
     vocab_size = ds.tokenize_corpus(word_tokenize)
     print("Successfully built dataset...")
@@ -253,7 +262,10 @@ if __name__ == "__main__":
     # input_list = gen_input(inp, target, artist, genre)
     # result = batchify_sequence_labeling(input_list)
     # print(result)
-    model, loss_list = train(ds, spec_dict)
+
+    model = WordSequence(spec_dict, ds)
+    model, loss_list = train(model, ds, spec_dict, num_lines=2)
+    torch.save(model.state_dict(), 'model3.pt')
     plt.plot(loss_list)
     plt.show()
     pred_lines = predict(model, ds)

@@ -1,9 +1,55 @@
 import pandas as pd
-from features import *
 from nltk import word_tokenize
 import random
-# nltk.download('cmudict')
+import nltk
+from itertools import product as iterprod
+import re
+from num2words import num2words
+import string
+import torch
+import pickle
+
+try:
+    phones_dict = nltk.corpus.cmudict.dict()
+except LookupError:
+    nltk.download('cmudict')
+    phones_dict = nltk.corpus.cmudict.dict()
 import cmudict
+
+def wordbreak(s):
+    ''' returns a list of list pronouncing according to cmudict, applies partitioning for words not in dictionary'''
+    s = s.lower()
+    # if doesn't contain alphabet, return unknown
+    # unknown phone handled in dictionary
+    if not re.search("[a-zA-Z]", s):
+        return [['<UNK>']]
+    # strip non-alphabetic character
+    s = re.sub("[^a-z]", "", s)
+    if s in phones_dict:
+        return phones_dict[s]
+    middle = len(s)/2
+    partition = sorted(list(range(len(s))), key=lambda x: (x - middle) ** 2 - x)
+    for i in partition:
+        pre, suf = (s[:i], s[i:])
+        if pre in phones_dict and wordbreak(suf) is not None:
+            return [x + y for x, y in iterprod(phones_dict[pre], wordbreak(suf))]
+    # return empty list if cannot be converted to phones
+    return [[]]
+
+def input_format_check(s):
+    '''
+    takes in a word token,
+    returns: empty string if it's punctuation, convert number to text,
+    strip punctuation other than apostrophe  '''
+    if s.isnumeric():
+        return num2words(s)
+    elif s.isalpha():
+        return s
+    elif re.search("(^')|('$)", s) and len(s) > 1:
+        return re.sub("(^')|('$)", "", s)
+    else:
+        # print("Manually check input type: ", s)
+        return s
 
 class Dataset(torch.utils.data.Dataset):
 
@@ -37,6 +83,33 @@ class Dataset(torch.utils.data.Dataset):
         self.idx2word = {}
         self.unique_words = []
         self.word_vocab_size = -1
+
+    def load_dict(self, artist_set, genre_set, word2idx, idx2word, phones2index, index2phones):
+        self.artist_set = artist_set
+        self.genre_set = genre_set
+        self.word2idx = word2idx
+        self.idx2word = idx2word
+        self.phones2index = phones2index
+        self.index2phones = index2phones
+
+        self.word_vocab_size = len(word2idx)
+        self.artist_size = len(artist_set)
+        self.genre_size = len(genre_set)
+
+    def save_dict(self):
+        with open('saved_data/artist_set.p', "wb") as fp:
+            pickle.dump(self.artist_set, fp)
+        with open('saved_data/genre_set.p', 'wb') as fp:
+            pickle.dump(self.genre_set, fp)
+        with open('saved_data/word2idx.p', 'wb') as fp:
+            pickle.dump(self.word2idx, fp)
+        with open('saved_data/idx2word.p', 'wb') as fp:
+            pickle.dump(self.idx2word, fp)
+        with open('saved_data/phones2index.p', 'wb') as fp:
+            pickle.dump(self.phones2index, fp)
+        with open('saved_data/index2phones.p', 'wb') as fp:
+            pickle.dump(self.index2phones, fp)
+
 
     def tokenize_corpus(self, tokenizer):
         ''' Takes entire corpus as a string and return word to index, and list of words
@@ -120,6 +193,40 @@ class Dataset(torch.utils.data.Dataset):
 
         return word_idx, char_idx, ph_idx
 
+    def random_song(self, path="data/csv/train.csv", subset=["R&B"], num_lines = 2, if_train = True):
+        ''':returns input_lines, target_lines, artist, genre'''
+        df = pd.read_csv(path)
+        if subset is not None:
+            df = df[df['Genre'].apply(lambda x: x in subset)]
+
+        curr_lyrics_list = df['Lyrics'].values
+        curr_artist_list = df['Artist'].values
+        curr_genre_list = df['Genre'].values
+
+        # sample a random song
+        while True:
+            rand_song = random.randint(0, len(curr_lyrics_list) - 1)
+            lyrics = curr_lyrics_list[rand_song]
+            lyric_lines = lyrics.split("\n")
+            artist = curr_artist_list[rand_song]
+            genre = curr_genre_list[rand_song]
+            mod_lyric_lines = []
+            # remove empty lines
+            for line in lyric_lines:
+                if line != '':
+                    mod_lyric_lines.append(line)
+            # find a song with enough lines
+            if len(mod_lyric_lines) > num_lines:
+                break
+
+        selected_str = re.sub('([,.\-!?()\n])', r' \1 ', '\n'.join(mod_lyric_lines))
+        selected_str = selected_str.strip()
+        select_word_tokens = re.split("[ ]+", selected_str)
+        input_lines = ' '.join(select_word_tokens[:-1])
+        target_lines = ' '.join(select_word_tokens[1:])
+
+        return input_lines, target_lines, artist, genre
+
     def random_lyric_chunks(self, path="data/csv/train.csv", subset=["R&B"], num_lines = 2, if_train = True):
         ''' randomly select chunks of lines
             path: allows training and test file
@@ -166,6 +273,7 @@ class Dataset(torch.utils.data.Dataset):
             selected_str = '\n'.join(selected_lines)
             # strip leading and trailing new line character
             selected_str = re.sub('([,.\-!?()\n])', r' \1 ', selected_str)
+            next_line = re.sub('([,.\-!?()\n])', r' \1 ', next_line)
             selected_str = selected_str.strip()
             word_tokens = re.split("[ ]+", selected_str)
             input_chunk = word_tokens[:-1]
@@ -189,6 +297,17 @@ class Dataset(torch.utils.data.Dataset):
         assert target_line != ''
 
         return input_line, target_line, artist, genre, next_line
+
+    def load(self, data_file):
+        f = open(data_file, 'rb')
+        tmp_dict = pickle.load(f)
+        f.close()
+        self.__dict__.update(tmp_dict)
+
+    def save(self, save_file):
+        f = open(save_file, 'wb')
+        pickle.dump(self.__dict__, f, 2)
+        f.close()
 
 
 if __name__ == "__main__":

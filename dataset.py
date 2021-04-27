@@ -84,17 +84,23 @@ class Dataset(torch.utils.data.Dataset):
         self.unique_words = []
         self.word_vocab_size = -1
 
-    def load_dict(self, artist_set, genre_set, word2idx, idx2word, phones2index, index2phones):
-        self.artist_set = artist_set
-        self.genre_set = genre_set
-        self.word2idx = word2idx
-        self.idx2word = idx2word
-        self.phones2index = phones2index
-        self.index2phones = index2phones
+    def load_dict(self):
+        with open('saved_data/artist_set.p', "rb") as fp:
+            self.artist_set = pickle.load(fp)
+        with open('saved_data/genre_set.p', 'rb') as fp:
+            self.genre_set = pickle.load(fp)
+        with open('saved_data/word2idx.p', 'rb') as fp:
+            self.word2idx = pickle.load(fp)
+        with open('saved_data/idx2word.p', 'rb') as fp:
+            self.idx2word = pickle.load(fp)
+        with open('saved_data/phones2index.p', 'rb') as fp:
+            self.phones2index = pickle.load(fp)
+        with open('saved_data/index2phones.p', 'rb') as fp:
+            self.index2phones = pickle.load(fp)
 
-        self.word_vocab_size = len(word2idx)
-        self.artist_size = len(artist_set)
-        self.genre_size = len(genre_set)
+        self.word_vocab_size = len(self.word2idx)
+        self.artist_size = len(self.artist_set)
+        self.genre_size = len(self.genre_set)
 
     def save_dict(self):
         with open('saved_data/artist_set.p', "wb") as fp:

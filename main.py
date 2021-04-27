@@ -3,14 +3,14 @@ from dataset import *
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
-def predict(model, dataset, num_lines = 2, gen_line = 1):
+def predict(model, dataset, num_lines = 2, gen_line = 1, data_path = "data/csv/train.csv"):
     ''' takes in trained model, and generate gen_line numbers of new lines
         returns: predicted next line, target next line'''
     pred_next_line = ''
     print("Start predicting next line..")
     # TODO: gen_input should produce a new line as target if not in training, including new line character
     # TODO: remove artist in test data not in train data
-    inp, target, artist, genre, next_line = dataset.random_lyric_chunks(path = "data/csv/train.csv", subset=["R&B"], num_lines=num_lines, if_train=False)
+    inp, target, artist, genre, next_line = dataset.random_lyric_chunks(path = data_path, subset=["R&B"], num_lines=num_lines, if_train=False)
     print("prediction input: ", inp)
     input_list = gen_input(dataset, inp, target, artist, genre, if_train=False)
     res = batchify_sequence_labeling(input_list, False)

@@ -18,8 +18,42 @@ There are three files relevant to this baseline implementation: *dataset.py*, *m
 
 Hyperparameters and training process are recorded in main function in *main.py*. To load saved model, and generate prediction, run the following code:
 
-**TODO: Insert code**
-
+    from nltk import word_tokenize
+    spec_dict = {"dropout": 0.7,
+                 "num_lstm_layers": 2,
+                 "bilstm_flag": True,
+                 "word_bilstm_flag": False,
+                 "use_artist": True,
+                 "char_hidden_dim": 128,
+                 "char_emb_dim": 100,
+                 "char_model_type": "LSTM",
+                 "word_emb_dim": 256,
+                 "pre_train_word_embedding": None,
+                 "feature_emb_dim": 128,
+                 "final_hidden_dim": 512,
+                 "learning rate": 0.001,
+                 "iterations": 2500,
+                 "print_every": 250,
+                 "plot_every": 50
+                 }
+    # path = './data/csv/train.csv'
+    ds = Dataset(path, subset=['R&B'])
+    vocab_size = ds.tokenize_corpus(word_tokenize)
+    print("Successfully built dataset...")
+    ## Make sure all the pickled dictionaries are in a folder called "saved_data" in the main directory
+    ds.load_dict() # load from saved dictionaries
+    model = WordSequence(spec_dict, ds)
+    model_path = "model.pt"
+    model.load_state_dict(torch.load(model_path))
+    pred_lines, target_line = predict(model, ds, data_path = "data/csv/train.csv")
+    print(pred_lines)
+    print(target_line)
+    
+A few things to note:
+1. "path" variable points to a csv input file, can be accessed from [Google Drive](https://drive.google.com/drive/folders/1i0LbMcoSYLQ4QjXRr5-zsnKDe7Skd32W?usp=sharing).
+2. Please make sure all the pickled dictionaries are in a folder called "saved_data" in the main directory. These dictionaries can be downloaded [here](https://drive.google.com/drive/folders/1vbUooe7-E7rltR5wMpJNN7lTDUn62afQ?usp=sharing).
+3. "model_path" refers to the file path of saved model.
+4. This chunk of code will produce the next line given randomly sampled lyrics, where "target_line" is the true next line, and "pred_line" is generated from our model
 
 ## Evaluation result
 

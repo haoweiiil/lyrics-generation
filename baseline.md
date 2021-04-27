@@ -63,10 +63,10 @@ The result is presented in the following table.
 
 |               | Avg Train | 
 |---------------|-----------|
-| Grammar score | 0         |
-| Rhyme         | False     |
-| Bleu score    | 0         | 
-| Rouge Score   | 0         | 
-| Bert Score    | 0.825     | 
-| Ld score      | 1.0       |
-| Plagiarism    | False     |
+| Grammar score | 0.0371    |
+| Rhyme         | 0.0000    |
+| Bleu score    | 0.0000    | 
+| Rouge Score   | 0.0000    | 
+| Bert Score    | 0.7721    | 
+| Ld score      | 0.1875    |
+| Plagiarism    | 0.0000    |

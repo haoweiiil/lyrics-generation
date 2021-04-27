@@ -4,7 +4,7 @@ As we've discussed in previous submission that, although language generation tas
 
 ## Related Paper and Model Implementation
 
-*Please note that we mentioned this paper in our previous literature review. Thus part of the following paragraphs borrows from our project guideline submission.*
+*Please note that we mentioned this paper in our previous literature review. Thus this part of the following paragraphs borrows from our project guideline submission.*
 
 **Tikhonov and Yamshchikov (2018)** in their "Guess who? Multilingual Approach For The Automated Generation Of Author-Stylized Poetry" discussed an author-stylized poetry generation mechanism based on LSTM neural network, which produces poem of higher relevance to the target author The authors argue that model trained on large corpus of texts that comprises of different styles might not learn to produce congruent and single-style sentences normally found in a single passage. To address this style related issue, this study trains model on entire corpus but only evaluates model performance conditional on target artists. We also found that model architecture employed by this study to be quite relevant and applicable to our analysis, as shown in figure below. 
 ![baseline model](/images/baseline%20model%20architecture.png) 

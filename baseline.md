@@ -71,5 +71,5 @@ The result is presented in the following table.
 
 
 ## NOTE
-The evaluation we used here is undertrained and we need more iterations to have a more diversed vocab for the generation.
+The evaluation we used here is undertrained and we need more iterations (thus time) to have a more diversed vocab for the generation.
 The model is fairly complicated and we may ask for further help from professor/TA.

@@ -19,23 +19,21 @@ There are three files relevant to this baseline implementation: *dataset.py*, *m
 Hyperparameters and training process are recorded in main function in *main.py*. To load saved model, and generate prediction, run the following code:
 
     from nltk import word_tokenize
-    spec_dict = {"dropout": 0.7,
-                 "num_lstm_layers": 2,
+    spec_dict = {"dropout": 0.5,
+                 "num_lstm_layers": 1,
                  "bilstm_flag": True,
-                 "word_bilstm_flag": False,
+                 "final_bilstm_flag": True,
                  "use_artist": True,
                  "char_hidden_dim": 128,
                  "char_emb_dim": 100,
                  "char_model_type": "LSTM",
-                 "word_emb_dim": 256,
+                 "word_emb_dim": 128,
                  "pre_train_word_embedding": None,
                  "feature_emb_dim": 128,
                  "final_hidden_dim": 512,
-                 "learning rate": 0.001,
-                 "iterations": 2500,
-                 "print_every": 250,
-                 "plot_every": 50
-                 }
+                 "iterations": 8000,
+                 "print_every": 50,
+                 "plot_every": 50}
     # path = './data/csv/train.csv'
     ds = Dataset(path, subset=['R&B'])
     vocab_size = ds.tokenize_corpus(word_tokenize)

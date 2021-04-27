@@ -61,12 +61,12 @@ The result is presented in the following table.
 
 **TODO: Change the numbers in the following table**
 
-|               | Train 1 | Train 2 | Test 1 | Test 2 | Avg. Test |
-|---------------|---------|---------|--------|--------|-----------|
-| Grammar score | 0       | 0       | 0      | 0      | 0.028     |
-| Rhyme         | False   | False   | False  | False  | 0         |
-| Bleu score    | 0       | 2.773   | 0      | 4.354  | 3.335     |
-| Rouge Score   | 0       | 0       | 0      | 0.167  | 0.044     |
-| Bert Score    | 0.825   | 0.830   | 0.827  | 0.821  | 0.814     |
-| Ld score      | 1.0     | 1.0     | 1.0    | 1.0    | 0.987     |
-| Plagiarism    | False   | False   | False  | False  | 0         |
+|               | Avg Train | 
+|---------------|-----------|
+| Grammar score | 0         |
+| Rhyme         | False     |
+| Bleu score    | 0         | 
+| Rouge Score   | 0         | 
+| Bert Score    | 0.825     | 
+| Ld score      | 1.0       |
+| Plagiarism    | False     |

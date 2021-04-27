@@ -75,4 +75,5 @@ The evaluation we used here is undertrained and we need more iterations (thus ti
 Our main difficulty lies in the need to include "\n" as a separator between lines. Therefore, the frequency of "\n" is very high, and the model tends to predict "\n" as the next word a lot. As there are more iterations, the model starts to select more diverse words.
 The model is fairly complicated and we may ask for further help from professor/TA.
 
-[https://docs.google.com/presentation/d/1ANLVJXO3ey5QCNZhpMtGpGzlTGF18acfMoZLg2ak4s8/edit?usp=sharing]
+## PPT presentation link
+[https://docs.google.com/presentation/d/1ANLVJXO3ey5QCNZhpMtGpGzlTGF18acfMoZLg2ak4s8/edit?usp=sharing](https://docs.google.com/presentation/d/1ANLVJXO3ey5QCNZhpMtGpGzlTGF18acfMoZLg2ak4s8/edit?usp=sharing)

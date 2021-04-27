@@ -72,4 +72,5 @@ The result is presented in the following table.
 
 ## NOTE
 The evaluation we used here is undertrained and we need more iterations (thus time) to have a more diversed vocab for the generation.
+Our main difficulty lies in the need to include "\n" as a separator between lines. Therefore, the frequency of "\n" is very high, and the model tends to predict "\n" as the next word a lot. As there are more iterations, the model starts to select more diverse words.
 The model is fairly complicated and we may ask for further help from professor/TA.

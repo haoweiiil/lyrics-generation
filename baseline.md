@@ -55,11 +55,9 @@ A few things to note:
 
 ## Evaluation result
 
-We evaluated the baseline model with similar procedure as the previous simple-baseline version. We randomly sample input lines from training and test files, then predict the next line, and compare this line to true next line using various metrics.
+We evaluated the baseline model with similar procedure as the previous simple-baseline version. We randomly sample input lines from training and test files, then predict the next line (word by word), and compare this line to true next line using various metrics.
 
 The result is presented in the following table. 
-
-**TODO: Change the numbers in the following table**
 
 |               | Avg Train | 
 |---------------|-----------|
@@ -70,3 +68,8 @@ The result is presented in the following table.
 | Bert Score    | 0.7721    | 
 | Ld score      | 0.1875    |
 | Plagiarism    | 0.0000    |
+
+
+## NOTE
+The evaluation we used here is undertrained and we need more iterations to have a more diversed vocab for the generation.
+The model is fairly complicated and we may ask for further help from professor/TA.

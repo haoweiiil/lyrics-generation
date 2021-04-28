@@ -4,7 +4,7 @@ As we've discussed in previous submission that, although language generation tas
 
 ## Related Paper and Model Implementation
 
-*Please note that we mentioned this paper in our previous literature review. Thus part of the following paragraphs borrows from our project guideline submission.*
+*Please note that we mentioned this paper in our previous literature review. Thus this part of the following paragraphs borrows from our project guideline submission.*
 
 **Tikhonov and Yamshchikov (2018)** in their "Guess who? Multilingual Approach For The Automated Generation Of Author-Stylized Poetry" discussed an author-stylized poetry generation mechanism based on LSTM neural network, which produces poem of higher relevance to the target author The authors argue that model trained on large corpus of texts that comprises of different styles might not learn to produce congruent and single-style sentences normally found in a single passage. To address this style related issue, this study trains model on entire corpus but only evaluates model performance conditional on target artists. We also found that model architecture employed by this study to be quite relevant and applicable to our analysis, as shown in figure below. 
 ![baseline model](/images/baseline%20model%20architecture.png) 
@@ -19,23 +19,21 @@ There are three files relevant to this baseline implementation: *dataset.py*, *m
 Hyperparameters and training process are recorded in main function in *main.py*. To load saved model, and generate prediction, run the following code:
 
     from nltk import word_tokenize
-    spec_dict = {"dropout": 0.7,
-                 "num_lstm_layers": 2,
+    spec_dict = {"dropout": 0.5,
+                 "num_lstm_layers": 1,
                  "bilstm_flag": True,
-                 "word_bilstm_flag": False,
+                 "final_bilstm_flag": True,
                  "use_artist": True,
                  "char_hidden_dim": 128,
                  "char_emb_dim": 100,
                  "char_model_type": "LSTM",
-                 "word_emb_dim": 256,
+                 "word_emb_dim": 128,
                  "pre_train_word_embedding": None,
                  "feature_emb_dim": 128,
                  "final_hidden_dim": 512,
-                 "learning rate": 0.001,
-                 "iterations": 2500,
-                 "print_every": 250,
-                 "plot_every": 50
-                 }
+                 "iterations": 8000,
+                 "print_every": 50,
+                 "plot_every": 50}
     # path = './data/csv/train.csv'
     ds = Dataset(path, subset=['R&B'])
     vocab_size = ds.tokenize_corpus(word_tokenize)
@@ -57,18 +55,25 @@ A few things to note:
 
 ## Evaluation result
 
-We evaluated the baseline model with similar procedure as the previous simple-baseline version. We randomly sample input lines from training and test files, then predict the next line, and compare this line to true next line using various metrics.
+We evaluated the baseline model with similar procedure as the previous simple-baseline version. We randomly sample input lines from training and test files, then predict the next line (word by word), and compare this line to true next line using various metrics.
 
 The result is presented in the following table. 
 
-**TODO: Change the numbers in the following table**
+|               | Avg Train | 
+|---------------|-----------|
+| Grammar score | 0.0371    |
+| Rhyme         | 0.0000    |
+| Bleu score    | 0.0000    | 
+| Rouge Score   | 0.0000    | 
+| Bert Score    | 0.7721    | 
+| Ld score      | 0.1875    |
+| Plagiarism    | 0.0000    |
 
-|               | Train 1 | Train 2 | Test 1 | Test 2 | Avg. Test |
-|---------------|---------|---------|--------|--------|-----------|
-| Grammar score | 0       | 0       | 0      | 0      | 0.028     |
-| Rhyme         | False   | False   | False  | False  | 0         |
-| Bleu score    | 0       | 2.773   | 0      | 4.354  | 3.335     |
-| Rouge Score   | 0       | 0       | 0      | 0.167  | 0.044     |
-| Bert Score    | 0.825   | 0.830   | 0.827  | 0.821  | 0.814     |
-| Ld score      | 1.0     | 1.0     | 1.0    | 1.0    | 0.987     |
-| Plagiarism    | False   | False   | False  | False  | 0         |
+
+## NOTE
+The evaluation we used here is undertrained and we need more iterations (thus time) to have a more diversed vocab for the generation.
+Our main difficulty lies in the need to include "\n" as a separator between lines. Therefore, the frequency of "\n" is very high, and the model tends to predict "\n" as the next word a lot. As there are more iterations, the model starts to select more diverse words.
+The model is fairly complicated and we may ask for further help from professor/TA.
+
+## PPT presentation link
+[https://docs.google.com/presentation/d/1ANLVJXO3ey5QCNZhpMtGpGzlTGF18acfMoZLg2ak4s8/edit?usp=sharing](https://docs.google.com/presentation/d/1ANLVJXO3ey5QCNZhpMtGpGzlTGF18acfMoZLg2ak4s8/edit?usp=sharing)

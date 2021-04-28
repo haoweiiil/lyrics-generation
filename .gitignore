@@ -339,6 +339,7 @@ saved_data
 
 # saved models
 *.pt
+saved_parameters1
 
 # image folder
 #images

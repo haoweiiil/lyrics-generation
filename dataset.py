@@ -128,7 +128,7 @@ class Dataset(torch.utils.data.Dataset):
         tokens = re.split("[ ]+", corp_lower)
         clean_tokens = [input_format_check(t) for t in tokens]
         # word level
-        self.unique_words = list(set(clean_tokens))
+        self.unique_words = sorted(list(set(clean_tokens)))
         self.unique_words.append('<UNK>')
         if "\n" not in self.unique_words:
             self.unique_words.append("\n")
@@ -139,15 +139,15 @@ class Dataset(torch.utils.data.Dataset):
         return self.word_vocab_size
 
     def get_artist_genre(self, seq_len, artist, genre):
+        ''' returns (artist_list, genre_list), each is list of length seq_len '''
         assert artist in self.artist_set
         assert genre in self.genre_set
 
         artist_idx = self.artist_set.index(artist)
         genre_idx = self.genre_set.index(genre)
-        feature = []
-        for i in range(seq_len):
-            feature.append([artist_idx, genre_idx])
-        return feature
+        artist_list = [artist_idx]*seq_len
+        genre_list = [genre_idx]*seq_len
+        return artist_list, genre_list
 
     def lyric_to_idx(self, line, if_train = True):
         """

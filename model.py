@@ -131,16 +131,16 @@ class WordRep(nn.Module):
         if self.use_artist:
             word_list.append(self.artist_embedding(artist_input))
         # char hidden
-        char_features = self.char_feature.get_last_hiddens(char_inputs, char_seq_lengths.numpy())
-        char_features = char_features[char_seq_recover]
-        char_features = char_features.view(batch_size, sent_len, -1)
-        # phones hidden
-        ph_features = self.ph_feature.get_last_hiddens(ph_inputs, ph_seq_lengths.numpy())
-        ph_features = ph_features[ph_seq_recover]
-        ph_features = ph_features.view(batch_size, sent_len, -1)
-        # concat word, char, and phones features
-        word_list.append(char_features)
-        word_list.append(ph_features)
+        # char_features = self.char_feature.get_last_hiddens(char_inputs, char_seq_lengths.numpy())
+        # char_features = char_features[char_seq_recover]
+        # char_features = char_features.view(batch_size, sent_len, -1)
+        # # phones hidden
+        # ph_features = self.ph_feature.get_last_hiddens(ph_inputs, ph_seq_lengths.numpy())
+        # ph_features = ph_features[ph_seq_recover]
+        # ph_features = ph_features.view(batch_size, sent_len, -1)
+        # # concat word, char, and phones features
+        # word_list.append(char_features)
+        # word_list.append(ph_features)
 
         word_embs = torch.cat(word_list, 2)
         word_represent = self.drop(word_embs)
@@ -157,9 +157,10 @@ class WordSequence(nn.Module):
         self.wordrep = WordRep(spec_dict, dataset)
         self.input_size = spec_dict['word_emb_dim']
         # char emb
-        self.input_size += spec_dict['char_hidden_dim']
-        # phones emb
-        self.input_size += spec_dict['char_hidden_dim']
+        # self.input_size += spec_dict['char_hidden_dim']
+        # # phones emb
+        # self.input_size += spec_dict['char_hidden_dim']
+
         self.input_size += spec_dict['feature_emb_dim']
         self.lstm_layers = spec_dict['num_lstm_layers']
         if spec_dict['use_artist']:

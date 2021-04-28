@@ -12,6 +12,7 @@ def predict(model, dataset, num_lines = 2, gen_line = 1, data_path = "data/csv/t
     # TODO: remove artist in test data not in train data
     inp, target, artist, genre, next_line = dataset.random_lyric_chunks(path = data_path, subset=["R&B"], num_lines=num_lines, if_train=False)
     print("prediction input: ", inp)
+    # print("next line: ", next_line)
     input_list = gen_input(dataset, inp, target, artist, genre, if_train=False)
     res = batchify_sequence_labeling(input_list, False)
     (word_seq_tensor, feature_seq_tensors, word_seq_lengths, word_seq_recover, char_seq_tensor, char_seq_lengths,
@@ -44,14 +45,12 @@ def predict(model, dataset, num_lines = 2, gen_line = 1, data_path = "data/csv/t
         # use new sentence as input to model
         inp = inp + ' '+pred_word
         target = inp # target word is not used in evaluation
-        print("full word")
         input_list = gen_input(dataset, inp, target, artist, genre, if_train=False)
         res = batchify_sequence_labeling(input_list, False)
         (word_seq_tensor, feature_seq_tensors, word_seq_lengths, word_seq_recover, char_seq_tensor, char_seq_lengths,
          char_seq_recover, ph_inputs, ph_seq_lengths, ph_seq_recover, target_seq_tensor, mask) = res
         batch_size = word_seq_tensor.size(0)
         seq_len = word_seq_tensor.size(1)
-        print("input len to lstm generation: ", seq_len)
 
     return pred_next_line, next_line
 
@@ -71,6 +70,37 @@ def gen_input(dataset, inp, target, artist, genre, batch_size = 1, if_train=True
 
     return input_list
 
+def gen_multibatch_input(dataset, file_path ="data/csv/train.csv", subset = ["R&B"], num_lines = 2, batch_size = 3):
+    ''' returns input list [words, chars, phones, features, target] '''
+    word_list = []
+    char_list = []
+    ph_list = []
+    target_list = []
+    artist_list = []
+    genre_list = []
+    inps = []
+    targets = []
+
+    for _ in range(batch_size):
+        inp, target, artist, genre, next_line = dataset.random_lyric_chunks(path="data/csv/train.csv", subset=subset,
+                                                                            num_lines=num_lines)
+        inps.append(inp)
+        targets.append(target)
+        word, char, ph = dataset.lyric_to_idx(inp)
+        word_list.append(word)
+        char_list.append(char)
+        ph_list.append(ph)
+        artist, genre = dataset.get_artist_genre(len(word), artist, genre)
+        artist_list.append(artist)
+        genre_list.append(genre)
+        target = dataset.lyric_to_idx(target, False)
+        target_list.append(target)
+
+    features_list = [artist_list, genre_list]
+    input_list = [word_list, char_list, ph_list, features_list, target_list]
+    return input_list, inps, targets
+
+
 def decode_lyrics(dataset, tensor):
     ''' convert word tensor to string '''
     res = ''
@@ -84,7 +114,7 @@ def batchify_sequence_labeling(input_batch_list, if_train=True):
             words: word ids for one sentence. (batch_size, sent_len)
             chars: char ids for one sentences, various length. (batch_size, sent_len, each_word_length)
             phones: phone ids one sentences, various length. (batch_size, sent_len, num_phone_in_word)
-            features: genre and artist. (batch_size, sent_len, feature_nums)
+            features: genre and artist. (feature_nums, batch_size, sent_len)
             target: next word prediction. (batch_size, sent_len)
         output:
             zero padding for word and char, with their batch length
@@ -104,9 +134,9 @@ def batchify_sequence_labeling(input_batch_list, if_train=True):
     words = input_batch_list[0]
     chars = input_batch_list[1]
     phones = input_batch_list[2]
-    features = np.array(input_batch_list[3])
+    features = input_batch_list[3]
     # print("features tensor: ",features)
-    feature_num = len(features[0][0])
+    feature_num = len(features)
     # genres = [sent[2] for sent in input_batch_list]
     # artist = [sent[3] for sent in input_batch_list]
     target = input_batch_list[4]
@@ -127,7 +157,7 @@ def batchify_sequence_labeling(input_batch_list, if_train=True):
         target_seq_tensor[idx, :seqlen] = torch.LongTensor(target_word)
         mask[idx, :seqlen] = torch.Tensor([1] * seqlen)
         for idy in range(feature_num):
-            feature_seq_tensors[idy][idx,:seqlen] = torch.LongTensor(features[idx][:,idy])
+            feature_seq_tensors[idy][idx,:seqlen] = torch.LongTensor(features[idy][idx])
     word_seq_lengths, word_perm_idx = word_seq_lengths.sort(0, descending=True)
     word_seq_tensor = word_seq_tensor[word_perm_idx]
     for idx in range(feature_num):
@@ -198,10 +228,9 @@ def calculate_loss(model, word_inputs, feature_inputs, word_seq_lengths, char_in
 
     return total_loss, pred
 
-def train(model, dataset, spec_dict, num_lines = 2):
+def train(model, optimizer, dataset, spec_dict, num_lines = 2, batch_size=128):
     lr = 0.001
     # model = WordSequence(spec_dict, dataset)
-    optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_list = []
     tot_loss = 0
     pred = None
@@ -211,8 +240,9 @@ def train(model, dataset, spec_dict, num_lines = 2):
         model.zero_grad()
         # sample lines from dataset
         # inp, target, artist, genre, next_line = dataset.random_lyric_chunks(path = "data/csv/train.csv", subset=["R&B"], num_lines=num_lines)
-        inp, target, artist, genre = dataset.random_song(path = "data/csv/train.csv", subset=["R&B"], num_lines=5)
-        input_list = gen_input(dataset, inp, target, artist, genre)
+        # inp, target, artist, genre = dataset.random_song(path = "data/csv/train.csv", subset=["R&B"], num_lines=5)
+        # input_list = gen_input(dataset, inp, target, artist, genre)
+        input_list, inps, targets = gen_multibatch_input(dataset,num_lines=num_lines, batch_size=batch_size)
         res = batchify_sequence_labeling(input_list, True)
         (word_seq_tensor, feature_seq_tensors, word_seq_lengths, word_seq_recover, char_seq_tensor, char_seq_lengths,
          char_seq_recover, phone_seq_tensor, phone_seq_lengths, phone_seq_recover, target_seq_tensor, mask) = res
@@ -224,10 +254,10 @@ def train(model, dataset, spec_dict, num_lines = 2):
             tot_loss = 0
         if (i+1) % spec_dict["print_every"] == 0:
             print("loss in current iteration: ", loss.item())
-            print("Input string: ", inp)
-            print("Target string: ", target)
-            print("prediced tensor: ", pred)
-            print("decoded string: ", decode_lyrics(dataset, pred[0]))
+            print("Input string: ", inps[-1])
+            print("Target string: ", targets[-1])
+            print("prediced tensor: ", pred[-1])
+            print("decoded string: ", decode_lyrics(dataset, pred[-1]))
         loss.backward()
         optimizer.step()
         model.zero_grad()
@@ -235,41 +265,51 @@ def train(model, dataset, spec_dict, num_lines = 2):
     return model, loss_list
 
 if __name__ == "__main__":
-    spec_dict = {"dropout": 0.7,
+    spec_dict = {"dropout": 0.5,
                  "num_lstm_layers": 2,
                  "bilstm_flag": True,
                  "word_bilstm_flag": False,
                  "use_artist": True,
                  "char_hidden_dim": 128,
-                 "char_emb_dim": 100,
+                 "char_emb_dim": 50,
                  "char_model_type": "LSTM",
                  "word_emb_dim": 256,
                  "pre_train_word_embedding": None,
                  "feature_emb_dim": 128,
                  "final_hidden_dim": 512,
                  "learning rate": 0.001,
-                 "iterations": 2500,
-                 "print_every": 250,
-                 "plot_every": 50
+                 "iterations": 2000,
+                 "print_every": 50,
+                 "plot_every": 100
                  }
     ds = Dataset('./data/csv/train.csv', subset=['R&B'])
     vocab_size = ds.tokenize_corpus(word_tokenize)
+    ds.load_dict()
     print("Successfully built dataset...")
     print("index of new line character: ", ds.word2idx['\n'])
     print("index of comma: ", ds.word2idx[','])
     print("index of <UNK>: ", ds.word2idx['<UNK>'])
+    # input_list = gen_multibatch_input(ds, file_path='./data/csv/train.csv', subset=['R&B'], num_lines=2, batch_size=3)
+    # print("batch size: ", len(input_list[0]))
+    # tensors = batchify_sequence_labeling(input_list)
+    # print(tensors[0])
+    # ds.save_dict()
     # inp, target, artist, genre = ds.random_lyric_chunks(1)
     # input_list = gen_input(inp, target, artist, genre)
     # result = batchify_sequence_labeling(input_list)
     # print(result)
 
     model = WordSequence(spec_dict, ds)
-    model, loss_list = train(model, ds, spec_dict, num_lines=2)
-    torch.save(model.state_dict(), 'model3.pt')
+    optimizer = optim.Adam(model.parameters(), lr=spec_dict['learning rate'])
+    model, loss_list = train(model, optimizer, ds, spec_dict, num_lines=3, batch_size=128)
+    path = 'saved_data/saved_parameters1'
+    torch.save({'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict()}, path)
     plt.plot(loss_list)
     plt.show()
-    pred_lines = predict(model, ds)
-    print(pred_lines)
+    for i in range(15):
+        pred_lines = predict(model, ds)
+        print(pred_lines)
 
 
 

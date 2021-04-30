@@ -201,6 +201,53 @@ class WordSequence(nn.Module):
         outputs = self.hidden2tag(feature_out)
         return outputs
 
+class WordLSTM(nn.Module):
+    def __init__(self, spec_dict, dataset):
+        super(WordLSTM, self).__init__()
+        self.dropout = nn.Dropout(spec_dict['dropout'])
+        self.input_size = dataset.word_vocab_size
+        self.embedding_dim = spec_dict['word_emb_dim']
+        self.lstm_layers = spec_dict['num_lstm_layers']
+        lstm_hidden = spec_dict["final_hidden_dim"]
+
+        # build word-level lstm
+        self.word_embedding = nn.Embedding(dataset.word_vocab_size, spec_dict['word_emb_dim'])
+        self.word_embedding.weight.data.copy_(torch.from_numpy(self.random_embedding(dataset.word_vocab_size, self.embedding_dim)))
+        self.lstm = nn.LSTM(self.embedding_dim, lstm_hidden, num_layers=self.lstm_layers, batch_first=True)
+        self.hidden2tag = nn.Linear(spec_dict["final_hidden_dim"], dataset.word_vocab_size)
+
+    def forward(self, word_inputs, word_seq_lengths):
+        """
+        input
+            :param word_inputs: (batch_size, sent_len)
+            :param genre_input: (batch_size, 1)
+            :param artist_input: None or (batch_size, 1)
+            :param word_seq_lengths: (batch_size, 1)
+            :param char_inputs: (batch_size*sent_len, word_length)
+            :param char_seq_lengths: (batch_size*sent_len, 1)
+            :param char_seq_recover: variable which records the char order information, used to recover char order
+        output
+            :return: Variable(batch_size, sent_len, word_vocab_size)
+        """
+        word_represent = self.word_embedding(word_inputs)
+
+        packed_words = pack_padded_sequence(word_represent, word_seq_lengths.numpy(), True)
+        hidden = None
+        lstm_out, hidden = self.lstm(packed_words, hidden)
+        lstm_out, _ = pad_packed_sequence(lstm_out)
+        ## lstm_out (seq_len, seq_len, hidden_size)
+        feature_out = self.dropout(lstm_out.transpose(1,0))
+        ## feature_out (batch_size, seq_len, hidden_size)
+        outputs = self.hidden2tag(feature_out)
+        return outputs
+
+    def random_embedding(self, vocab_size, embedding_dim):
+        pretrain_emb = np.empty([vocab_size, embedding_dim])
+        scale = np.sqrt(3.0 / embedding_dim)
+        for index in range(vocab_size):
+            pretrain_emb[index, :] = np.random.uniform(-scale, scale, [1, embedding_dim])
+        return pretrain_emb
+
 
 if __name__ == "__main__":
     spec_dict = {"ph_size": 39,

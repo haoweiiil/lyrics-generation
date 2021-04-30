@@ -6,7 +6,7 @@ from itertools import product as iterprod
 import re
 from num2words import num2words
 import string
-import torch
+# import torch
 import pickle
 
 try:
@@ -51,7 +51,7 @@ def input_format_check(s):
         # print("Manually check input type: ", s)
         return s
 
-class Dataset(torch.utils.data.Dataset):
+class Dataset():
 
     def __init__(self, filepath, subset=None):
         # data

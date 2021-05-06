@@ -9,6 +9,7 @@ import re
 import json
 import requests
 from utils.utils import *
+import numpy as np
 
 # Initiate.
 

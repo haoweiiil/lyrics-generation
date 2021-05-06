@@ -81,9 +81,9 @@ Alternatively, the *main.py* script is currently configured to train and predict
 Project folder link: [https://drive.google.com/drive/folders/1ouFWNXlFdGqnj2I8SBaLCVmWajoYoTNP?usp=sharing](https://drive.google.com/drive/folders/1ouFWNXlFdGqnj2I8SBaLCVmWajoYoTNP?usp=sharing)
 Fine-tuned GPT-2 Colab link: [https://colab.research.google.com/drive/1gHb16zM-fJURkVB2dB4_RppBS7cOLnxo?usp=sharing](https://colab.research.google.com/drive/1gHb16zM-fJURkVB2dB4_RppBS7cOLnxo?usp=sharing)
 
-I. Set up
+### I. Set up
 Run all cells in the colab file before Section 1.
 
-II. Loading saved model
+### II. Loading saved model
 Section 1-3 includes training the model and examining the loss of the model.
 Section 4 load saved model to the notebook and generate text. Run the whole section to generation new lyrics. Last two cells under secion 4.1 is commented out to avoid overiding our current results.

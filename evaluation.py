@@ -81,9 +81,6 @@ def get_rhyme_phyme(word, include_consonant=False, print_list=False,
     :param include_consonant: consonant is the least rigorous type of rhyme; if false, will not include words here
     :param print_list: print the final list to compare with or not
     """
-    
-    if len(generated_text) == 0:
-        return np.nan
 
     # check if the last word is a number; if so, find its words equivalence
     if word.isnumeric():

@@ -336,6 +336,7 @@ Backup of *.doc*
 # data folder
 data
 saved_data
+outputs
 
 # saved models
 *.pt

@@ -1,9 +1,6 @@
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-from features import *
+from utils.features import *
 
 # https://github.com/jiesutd/NCRFpp/blob/master/model/charbilstm.py
 class CharBiLSTM(nn.Module):
@@ -39,9 +36,7 @@ class CharBiLSTM(nn.Module):
         char_hidden = None
         pack_input = pack_padded_sequence(char_embeds, seq_lengths, True)
         char_rnn_out, char_hidden = self.char_lstm(pack_input, char_hidden)
-        ## char_hidden = (h_t, c_t)
-        #  char_hidden[0] = h_t = (2, batch_size, lstm_dimension)
-        # char_rnn_out, _ = pad_packed_sequence(char_rnn_out)
+
         return char_hidden[0].transpose(1, 0).contiguous().view(batch_size, -1)
 
     def get_all_hiddens(self, input, seq_lengths):
@@ -95,7 +90,6 @@ class WordRep(nn.Module):
         self.genre_embedding = nn.Embedding(dataset.genre_size, self.genre_emb_dim)
         self.genre_embedding.weight.data.copy_(torch.from_numpy(self.random_embedding(dataset.genre_size,
                                                                                        self.genre_emb_dim)))
-        # add other self-defined features if needed
 
     def random_embedding(self, vocab_size, embedding_dim):
         pretrain_emb = np.empty([vocab_size, embedding_dim])
@@ -131,16 +125,16 @@ class WordRep(nn.Module):
         if self.use_artist:
             word_list.append(self.artist_embedding(artist_input))
         # char hidden
-        # char_features = self.char_feature.get_last_hiddens(char_inputs, char_seq_lengths.numpy())
-        # char_features = char_features[char_seq_recover]
-        # char_features = char_features.view(batch_size, sent_len, -1)
-        # # phones hidden
-        # ph_features = self.ph_feature.get_last_hiddens(ph_inputs, ph_seq_lengths.numpy())
-        # ph_features = ph_features[ph_seq_recover]
-        # ph_features = ph_features.view(batch_size, sent_len, -1)
-        # # concat word, char, and phones features
-        # word_list.append(char_features)
-        # word_list.append(ph_features)
+        char_features = self.char_feature.get_last_hiddens(char_inputs, char_seq_lengths.numpy())
+        char_features = char_features[char_seq_recover]
+        char_features = char_features.view(batch_size, sent_len, -1)
+        # phones hidden
+        ph_features = self.ph_feature.get_last_hiddens(ph_inputs, ph_seq_lengths.numpy())
+        ph_features = ph_features[ph_seq_recover]
+        ph_features = ph_features.view(batch_size, sent_len, -1)
+        # concat word, char, and phones features
+        word_list.append(char_features)
+        word_list.append(ph_features)
 
         word_embs = torch.cat(word_list, 2)
         word_represent = self.drop(word_embs)
@@ -157,9 +151,9 @@ class WordSequence(nn.Module):
         self.wordrep = WordRep(spec_dict, dataset)
         self.input_size = spec_dict['word_emb_dim']
         # char emb
-        # self.input_size += spec_dict['char_hidden_dim']
-        # # phones emb
-        # self.input_size += spec_dict['char_hidden_dim']
+        self.input_size += spec_dict['char_hidden_dim']
+        # phones emb
+        self.input_size += spec_dict['char_hidden_dim']
 
         self.input_size += spec_dict['feature_emb_dim']
         self.lstm_layers = spec_dict['num_lstm_layers']
@@ -220,12 +214,7 @@ class WordLSTM(nn.Module):
         """
         input
             :param word_inputs: (batch_size, sent_len)
-            :param genre_input: (batch_size, 1)
-            :param artist_input: None or (batch_size, 1)
             :param word_seq_lengths: (batch_size, 1)
-            :param char_inputs: (batch_size*sent_len, word_length)
-            :param char_seq_lengths: (batch_size*sent_len, 1)
-            :param char_seq_recover: variable which records the char order information, used to recover char order
         output
             :return: Variable(batch_size, sent_len, word_vocab_size)
         """

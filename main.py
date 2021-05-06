@@ -1,72 +1,23 @@
 from model import *
 from dataset import *
 import torch.optim as optim
+from evaluation import *
+import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-def predict(model, dataset, num_lines = 2, gen_line = 1, data_path = "data/csv/train.csv"):
-    ''' takes in trained model, and generate gen_line numbers of new lines
-        returns: predicted next line, target next line'''
-    pred_next_line = ''
-    print("Start predicting next line..")
-    # TODO: gen_input should produce a new line as target if not in training, including new line character
-    # TODO: remove artist in test data not in train data
-    inp, target, artist, genre, next_line = dataset.random_lyric_chunks(path = data_path, subset=["R&B"], num_lines=num_lines, if_train=False)
-    print("prediction input: ", inp)
-    # print("next line: ", next_line)
-    input_list = gen_input(dataset, inp, target, artist, genre, if_train=False)
-    res = batchify_sequence_labeling(input_list, False)
-    (word_seq_tensor, feature_seq_tensors, word_seq_lengths, word_seq_recover, char_seq_tensor, char_seq_lengths,
-     char_seq_recover, ph_inputs, ph_seq_lengths, ph_seq_recover, target_seq_tensor, mask) = res
-    batch_size = word_seq_tensor.size(0)
-    seq_len = word_seq_tensor.size(1)
-
-    # set in eval mode
-    model.eval()
-    # feed into model, and generate until new line character, or allow 15 words max
-    for _ in range(15):
-        genre_input = feature_seq_tensors[1]
-        artist_input = feature_seq_tensors[0]
-        outs = model(word_seq_tensor, genre_input, artist_input, word_seq_lengths, char_seq_tensor, char_seq_lengths, char_seq_recover,
-                ph_inputs, ph_seq_lengths, ph_seq_recover)
-        outs = outs.view(batch_size * seq_len, -1)
-        score = F.log_softmax(outs, 1)
-        _, pred = torch.max(score, 1)
-        pred = pred.view(batch_size, seq_len)
-        print("prediction tensor: ", pred)
-        pred = pred[0,-1].item()
-        # find the corresponding word
-        pred_word = dataset.idx2word[pred]
-        # append predicted word
-        pred_next_line  = pred_next_line + ' ' + pred_word
-        # stop if next hit new line character
-        print(pred_word)
-        if pred_word == '\n':
-            break
-        # use new sentence as input to model
-        inp = inp + ' '+pred_word
-        target = inp # target word is not used in evaluation
-        input_list = gen_input(dataset, inp, target, artist, genre, if_train=False)
-        res = batchify_sequence_labeling(input_list, False)
-        (word_seq_tensor, feature_seq_tensors, word_seq_lengths, word_seq_recover, char_seq_tensor, char_seq_lengths,
-         char_seq_recover, ph_inputs, ph_seq_lengths, ph_seq_recover, target_seq_tensor, mask) = res
-        batch_size = word_seq_tensor.size(0)
-        seq_len = word_seq_tensor.size(1)
-
-    return pred_next_line, next_line
-
-def gen_input(dataset, inp, target, artist, genre, batch_size = 1, if_train=True):
-    ''' Takes in dataset object, return randomly sampled lines, converted to batchified tensors'''
-    batches = []
-    # TODO: handle batch_size > 1
+def gen_input(dataset, inp, target, artist, genre, word_lstm=False):
+    ''' Takes in some lyric lines, converted to batchified tensors'''
     # print(inp)
     # print(target)
     word, char, ph = dataset.lyric_to_idx(inp)
-    input_list = [[word], [char], [ph]]
-    features = [dataset.get_artist_genre(len(word), artist, genre)]
+    target = dataset.lyric_to_idx(target, False)
 
-    target = [dataset.lyric_to_idx(target, False)]
-    input_list.append(features)
-    input_list.append(target)
+    if not word_lstm:
+        artist, genre = dataset.get_artist_genre(len(word), artist, genre)
+        features = [[artist], [genre]]
+        input_list = [[word], [char], [ph], features, [target]]
+    else:
+        input_list = [[word], [target]]
 
     return input_list
 
@@ -293,9 +244,6 @@ def train(model, optimizer, dataset, spec_dict, num_lines = 2, batch_size=128, w
         model.train()
         model.zero_grad()
         # sample lines from dataset
-        # inp, target, artist, genre, next_line = dataset.random_lyric_chunks(path = "data/csv/train.csv", subset=["R&B"], num_lines=num_lines)
-        # inp, target, artist, genre = dataset.random_song(path = "data/csv/train.csv", subset=["R&B"], num_lines=5)
-        # input_list = gen_input(dataset, inp, target, artist, genre)
         input_list, inps, targets = gen_multibatch_input(dataset,num_lines=num_lines, batch_size=batch_size, word_lstm=word_lstm)
         if not word_lstm:
             res = batchify_sequence_labeling(input_list, True)
@@ -319,22 +267,113 @@ def train(model, optimizer, dataset, spec_dict, num_lines = 2, batch_size=128, w
 
     return model, loss_list
 
+def predict(model, dataset, num_lines = 2, gen_line = 1, data_path = "data/csv/train.csv", word_lstm=False):
+    ''' takes in trained model, and generate gen_line numbers of new lines
+        returns: predicted next line, target next line'''
+    pred_next_line = ''
+    print("Start predicting next line..")
+    # TODO: gen_input should produce a new line as target if not in training, including new line character
+    # TODO: remove artist in test data not in train data
+    inp, target, artist, genre, next_line = dataset.random_lyric_chunks(path = data_path, subset=["R&B"], num_lines=num_lines, if_train=False)
+    # input_list, inps, targets = gen_multibatch_input(dataset, num_lines=num_lines, batch_size=1,word_lstm=word_lstm)
+    input_list = gen_input(dataset, inp, target, artist, genre, word_lstm=word_lstm)
+    org_input = inp
+    # print("prediction input: ", inp)
+    # print("next line: ", target)
+    if not word_lstm:
+        res = batchify_sequence_labeling(input_list, if_train=False)
+        (word_inputs, feature_inputs, word_seq_lengths, word_seq_recover, char_inputs, char_seq_lengths,
+         char_seq_recover, ph_inputs, ph_seq_lengths, ph_seq_recover, target_seq, mask) = res
+    else:
+        res = batchify_word_list(input_list, if_train=False)
+        (word_inputs, word_seq_lengths, target_seq, mask) = res
+    batch_size = word_inputs.size(0)
+    seq_len = word_inputs.size(1)
+
+    # set in eval mode
+    model.eval()
+    # feed into model, and generate until new line character, or allow 15 words max
+    for _ in range(15):
+        if not word_lstm:
+            genre_input = feature_inputs[1]
+            artist_input = feature_inputs[0]
+            outs = model(word_inputs, genre_input, artist_input, word_seq_lengths, char_inputs, char_seq_lengths,
+                         char_seq_recover, ph_inputs, ph_seq_lengths, ph_seq_recover)
+        else:
+            outs = model(word_inputs, word_seq_lengths)
+        outs = outs.view(batch_size * seq_len, -1)
+        score = F.log_softmax(outs, 1)
+        _, pred = torch.max(score, 1)
+        pred = pred.view(batch_size, seq_len)
+        # print("prediction tensor: ", pred)
+        pred = pred[0,-1].item()
+        # find the corresponding word
+        pred_word = dataset.idx2word[pred]
+        # append predicted word
+        pred_next_line  = pred_next_line + ' ' + pred_word
+        # stop if next hit new line character
+        # print(pred_word)
+        # if pred_word == '\n':
+        #     break
+        # use new sentence as input to model
+        inp = inp + ' '+pred_word
+        target = inp # target word is not used in evaluation
+        input_list = gen_input(dataset, inp, target, artist, genre, word_lstm=word_lstm)
+        if not word_lstm:
+            res = batchify_sequence_labeling(input_list, if_train=False)
+            (word_inputs, feature_inputs, word_seq_lengths, word_seq_recover, char_inputs, char_seq_lengths,
+             char_seq_recover, ph_inputs, ph_seq_lengths, ph_seq_recover, target_seq, mask) = res
+        else:
+            res = batchify_word_list(input_list, if_train=False)
+            (word_inputs, word_seq_lengths, target_seq, mask) = res
+        batch_size = word_inputs.size(0)
+        seq_len = word_inputs.size(1)
+
+    return pred_next_line, next_line, org_input
+
+def output_group_eval_scores(data_type, pred_dict):
+    # calculate individual scores
+    scores = {}
+    for k in pred_dict:
+        prediction, target, inp = pred_dict[k]
+        scores[k] = run_evaluations(inp, [target], prediction)
+
+    # aggregate scores
+    evaluation_metrics = ["grammar_score", "rhyme", "bleu_score", "rouge_score", "bert_score", "ld_score",
+                          "plagiarism"]
+    sum_scores = {}
+    for m in evaluation_metrics:
+        sum_scores[m] = 0
+        for k in scores:
+            if scores[k][m]:
+                sum_scores[m] += scores[k][m]
+
+    for m in evaluation_metrics:
+        sum_scores[m] = sum_scores[m] / len(scores)
+
+    scores['mean'] = sum_scores
+
+    # with open("outputs/evaluations_scores_" + data_type + ".txt", "w") as f_eval:
+    #     json.dump(scores, f_eval, indent=4)
+
+    return scores
+
 if __name__ == "__main__":
     spec_dict = {"dropout": 0.5,
-                 "num_lstm_layers": 2,
+                 "num_lstm_layers": 1,
                  "bilstm_flag": True,
                  "word_bilstm_flag": False,
                  "use_artist": True,
-                 "char_hidden_dim": 128,
+                 "char_hidden_dim": 50,
                  "char_emb_dim": 50,
                  "char_model_type": "LSTM",
-                 "word_emb_dim": 128,
+                 "word_emb_dim": 50,
                  "pre_train_word_embedding": None,
                  "feature_emb_dim": 50,
                  "final_hidden_dim": 512,
                  "learning rate": 0.001,
-                 "iterations": 100,
-                 "print_every": 5,
+                 "iterations": 50,
+                 "print_every": 20,
                  "plot_every": 25
                  }
     ds = Dataset('./data/csv/train.csv', subset=['R&B'])
@@ -354,25 +393,59 @@ if __name__ == "__main__":
     # result = batchify_sequence_labeling(input_list)
     # print(result)
 
-    # model = WordSequence(spec_dict, ds)
+    model = WordSequence(spec_dict, ds)
+    optimizer = optim.Adam(model.parameters(), lr=spec_dict['learning rate'])
+    path = 'saved_data/wordchar2.1'
+    checkpoint = torch.load(path)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    model, loss_list = train(model, optimizer, ds, spec_dict, num_lines=3, batch_size=50, word_lstm=False)
+    path = 'saved_data/wordchar2.2'
+    torch.save({'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict()}, path)
+    ## Predict using concatenated word representation model
+    # word_lstm = False
+    # prediction_examples = {}
+    # for i in range(30):
+    #     generated, target, input = predict(model, ds, data_path='data/csv/test_new.csv', word_lstm=word_lstm)
+    #     prediction_examples[i] = [generated, target, input]
+    # with open("outputs/predictions_examples_cat_word_lstm_test.txt", "w") as f_pred:
+    #     json.dump(prediction_examples, f_pred, indent=4)
+    with open("outputs/predictions_examples_cat_word_lstm_test.txt", "r") as f:
+        prediction_examples = json.load(f)
+    scores = output_group_eval_scores("cat_word_lstm_test", prediction_examples)
+    print(scores)
+    with open("outputs/evaluations_scores_cat_word_lstm_test.txt", "w") as f_eval:
+        json.dump(scores, f_eval, indent=4)
+
+
+    # model = WordLSTM(spec_dict, ds)
     # optimizer = optim.Adam(model.parameters(), lr=spec_dict['learning rate'])
-    # model, loss_list = train(model, optimizer, ds, spec_dict, num_lines=3, batch_size=128)
-    # path = 'saved_data/saved_parameters1'
+    # path = 'saved_data/word_lstm2.4'
+    # checkpoint = torch.load(path)
+    # model.load_state_dict(checkpoint['model_state_dict'])
+    # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    # model, loss_list = train(model, optimizer, ds, spec_dict, num_lines=3, batch_size=50, word_lstm=True)
+    # path = 'saved_data/word_lstm2.4'
     # torch.save({'model_state_dict': model.state_dict(),
     #             'optimizer_state_dict': optimizer.state_dict()}, path)
 
-    model = WordLSTM(spec_dict, ds)
-    optimizer = optim.Adam(model.parameters(), lr=spec_dict['learning rate'])
-    model, loss_list = train(model, optimizer, ds, spec_dict, num_lines=3, batch_size=5, word_lstm=True)
-    path = 'saved_data/word_lstm1'
-    torch.save({'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict()}, path)
+    # plt.plot(loss_list)
+    # plt.show()
+    # word_lstm = True
+    # prediction_examples = {}
+    # for i in range(30):
+    #     generated, target, input = predict(model, ds, data_path='data/csv/test_new.csv', word_lstm=word_lstm)
+    #     prediction_examples[i] = [generated, target, input]
+    # with open("outputs/predictions_examples_word_lstm_test.txt", "w") as f_pred:
+    #     json.dump(prediction_examples, f_pred, indent=4)
+    # with open("outputs/predictions_examples_word_lstm_test.txt", "r") as f:
+    #     prediction_examples = json.load(f)
+    # scores = output_group_eval_scores("word_lstm_test", prediction_examples)
+    # print(scores)
+    # with open("outputs/evaluations_scores_word_lstm_test.txt", "w") as f_eval:
+    #     json.dump(scores, f_eval, indent=4)
 
-    plt.plot(loss_list)
-    plt.show()
-    for i in range(15):
-        pred_lines = predict(model, ds)
-        print(pred_lines)
 
 
 

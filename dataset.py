@@ -6,7 +6,6 @@ from itertools import product as iterprod
 import re
 from num2words import num2words
 import string
-# import torch
 import pickle
 
 try:
@@ -121,7 +120,6 @@ class Dataset():
         ''' Takes entire corpus as a string and return word to index, and list of words
             :returns word2idx, unique_words, word_vocab_len'''
         ## handle lyrics
-        # TODO: handle punctuation in word embedding
         lyrics = '\n'.join(self.lyrics_list)
         lyrics = re.sub('([,.!?"\n])', r' \1 ', lyrics) # pad punctuation and new line for splitting
         corp_lower = lyrics.lower()
@@ -199,40 +197,6 @@ class Dataset():
 
         return word_idx, char_idx, ph_idx
 
-    def random_song(self, path="data/csv/train.csv", subset=["R&B"], num_lines = 2, if_train = True):
-        ''':returns input_lines, target_lines, artist, genre'''
-        df = pd.read_csv(path)
-        if subset is not None:
-            df = df[df['Genre'].apply(lambda x: x in subset)]
-
-        curr_lyrics_list = df['Lyrics'].values
-        curr_artist_list = df['Artist'].values
-        curr_genre_list = df['Genre'].values
-
-        # sample a random song
-        while True:
-            rand_song = random.randint(0, len(curr_lyrics_list) - 1)
-            lyrics = curr_lyrics_list[rand_song]
-            lyric_lines = lyrics.split("\n")
-            artist = curr_artist_list[rand_song]
-            genre = curr_genre_list[rand_song]
-            mod_lyric_lines = []
-            # remove empty lines
-            for line in lyric_lines:
-                if line != '':
-                    mod_lyric_lines.append(line)
-            # find a song with enough lines
-            if len(mod_lyric_lines) > num_lines:
-                break
-
-        selected_str = re.sub('([,.\-!?()\n])', r' \1 ', '\n'.join(mod_lyric_lines))
-        selected_str = selected_str.strip()
-        select_word_tokens = re.split("[ ]+", selected_str)
-        input_lines = ' '.join(select_word_tokens[:-1])
-        target_lines = ' '.join(select_word_tokens[1:])
-
-        return input_lines, target_lines, artist, genre
-
     def random_lyric_chunks(self, path="data/csv/train.csv", subset=["R&B"], num_lines = 2, if_train = True):
         ''' randomly select chunks of lines
             path: allows training and test file
@@ -293,9 +257,6 @@ class Dataset():
             if len(word_tokens) > 2:
                 break
 
-        # print(selected_str)
-        # print("input: ", input_chunk)
-        # print("target: ", target_chunk)
         input_line = ' '.join(input_chunk)
         target_line = ' '.join(target_chunk)
 

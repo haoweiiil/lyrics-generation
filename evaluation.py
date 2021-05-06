@@ -35,6 +35,8 @@ def get_grammar_score(text, tool, output_error_matches=False):
     if output_error_matches:
         for match in matches:
             print(match.ruleId, match.replacements)
+    if len(text) == 0:
+        return np.nan
     return len(matches) / len(text)
 
 

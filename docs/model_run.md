@@ -79,6 +79,7 @@ Alternatively, the *main.py* script is currently configured to train and predict
     
 ## Fine-tuned GPT-2
 Project folder link: [https://drive.google.com/drive/folders/1ouFWNXlFdGqnj2I8SBaLCVmWajoYoTNP?usp=sharing](https://drive.google.com/drive/folders/1ouFWNXlFdGqnj2I8SBaLCVmWajoYoTNP?usp=sharing)
+
 Fine-tuned GPT-2 Colab link: [https://colab.research.google.com/drive/1gHb16zM-fJURkVB2dB4_RppBS7cOLnxo?usp=sharing](https://colab.research.google.com/drive/1gHb16zM-fJURkVB2dB4_RppBS7cOLnxo?usp=sharing)
 
 ### I. Set up

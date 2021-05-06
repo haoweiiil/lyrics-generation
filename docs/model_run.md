@@ -11,38 +11,38 @@ For LSTM models discussed below, we have saved the model parameters, and therefo
 2. Then make sure the dataset dictionaries are saved in folder *saved_data* as well.
 
 
-    from main import *
-    spec_dict = {"dropout": 0.5,
-                 "num_lstm_layers": 1,
-                 "bilstm_flag": True,
-                 "word_bilstm_flag": False,
-                 "use_artist": True,
-                 "char_hidden_dim": 50,
-                 "char_emb_dim": 50,
-                 "char_model_type": "LSTM",
-                 "word_emb_dim": 50,
-                 "pre_train_word_embedding": None,
-                 "feature_emb_dim": 50,
-                 "final_hidden_dim": 512,
-                 "learning rate": 0.001,
-                 "iterations": 100,
-                 "print_every": 20,
-                 "plot_every": 25
-                 }
-    ds = Dataset('./data/csv/train.csv', subset=['R&B'])
-    ds.load_dict()
+        from main import *
+        spec_dict = {"dropout": 0.5,
+                     "num_lstm_layers": 1,
+                     "bilstm_flag": True,
+                     "word_bilstm_flag": False,
+                     "use_artist": True,
+                     "char_hidden_dim": 50,
+                     "char_emb_dim": 50,
+                     "char_model_type": "LSTM",
+                     "word_emb_dim": 50,
+                     "pre_train_word_embedding": None,
+                     "feature_emb_dim": 50,
+                     "final_hidden_dim": 512,
+                     "learning rate": 0.001,
+                     "iterations": 100,
+                     "print_every": 20,
+                     "plot_every": 25
+                     }
+        ds = Dataset('./data/csv/train.csv', subset=['R&B'])
+        ds.load_dict()
     
-    # Loading baseline LSTM model             
-    baseline_model = WordLSTM(spec_dict, ds)
-    path = 'saved_data/word_lstm2.4'
-    checkpoint = torch.load(path)
-    baseline_model.load_state_dict(checkpoint['model_state_dict'])
-    
-    # Loading Expanded LSTM model
-    exp_lstm_model = WordSequence(spec_dict, ds)
-    path = 'saved_data/wordchar2.2'
-    checkpoint = torch.load(path)
-    exp_lstm_model.load_state_dict(checkpoint['model_state_dict'])
+        # Loading baseline LSTM model             
+        baseline_model = WordLSTM(spec_dict, ds)
+        path = 'saved_data/word_lstm2.4'
+        checkpoint = torch.load(path)
+        baseline_model.load_state_dict(checkpoint['model_state_dict'])
+        
+        # Loading Expanded LSTM model
+        exp_lstm_model = WordSequence(spec_dict, ds)
+        path = 'saved_data/wordchar2.2'
+        checkpoint = torch.load(path)
+        exp_lstm_model.load_state_dict(checkpoint['model_state_dict'])
  
     
 ### II. Making next-line predictions
@@ -50,6 +50,7 @@ For LSTM models discussed below, we have saved the model parameters, and therefo
 The following script samples from test file, and produce next-line generation given sampled lyrics input. The number of generation can be changed via variable *num_iters*. The generation results are recorded in a dictionary with iteration number as key, and **\[Input lyrics, Target lyric, Generated lyric\]** as value. The results are configured to be saved in a text file under *outputs* folder.
 
 To switch between the baseline and expanded version of LSTM model, simply change the configurations of variable **word_lstm**, **model**, and **eval_out_path** using the following script. 
+
 
 
     ## Predicting using baseline LSTM model

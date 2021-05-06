@@ -6,7 +6,7 @@ For LSTM models discussed below, we have saved the model parameters, and therefo
 
 ### I. Loading saved model
 
-1. First, please download the [saved model]() to folder *saved_data*. Then run the following script in Python console.
+1. First, please download the [saved models](https://drive.google.com/drive/folders/1VlpxPyEnoXo9VgdSMvubMa9WP0bvd2fu?usp=sharing) to folder *saved_data*. Then run the following script in Python console.
 
 2. Then make sure the dataset dictionaries are saved in folder *saved_data* as well.
 

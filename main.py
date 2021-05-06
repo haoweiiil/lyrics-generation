@@ -4,6 +4,7 @@ import torch.optim as optim
 from evaluation import *
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
+import math
 
 def gen_input(dataset, inp, target, artist, genre, word_lstm=False):
     ''' Takes in some lyric lines, converted to batchified tensors'''
@@ -341,17 +342,17 @@ def output_group_eval_scores(data_type, pred_dict):
     # aggregate scores
     evaluation_metrics = ["grammar_score", "rhyme", "bleu_score", "rouge_score", "bert_score", "ld_score",
                           "plagiarism"]
-    sum_scores = {}
+    mean_scores = {}
     for m in evaluation_metrics:
-        sum_scores[m] = 0
+        sum_scores = 0
+        count = 0
         for k in scores:
-            if scores[k][m]:
-                sum_scores[m] += scores[k][m]
+            if not math.isnan(scores[k][m]):
+                sum_scores += scores[k][m]
+                count += 1
+        mean_scores[m] = sum_scores/count
 
-    for m in evaluation_metrics:
-        sum_scores[m] = sum_scores[m] / len(scores)
-
-    scores['mean'] = sum_scores
+    scores['mean'] = mean_scores
 
     # with open("outputs/evaluations_scores_" + data_type + ".txt", "w") as f_eval:
     #     json.dump(scores, f_eval, indent=4)

@@ -35,6 +35,8 @@ def get_grammar_score(text, tool, output_error_matches=False):
     if output_error_matches:
         for match in matches:
             print(match.ruleId, match.replacements)
+    if len(text) == 0:
+        return np.nan
     return len(matches) / len(text)
 
 
@@ -78,6 +80,9 @@ def get_rhyme_phyme(word, include_consonant=False, print_list=False,
     :param include_consonant: consonant is the least rigorous type of rhyme; if false, will not include words here
     :param print_list: print the final list to compare with or not
     """
+    
+    if len(generated_text) == 0:
+        return np.nan
 
     # check if the last word is a number; if so, find its words equivalence
     if word.isnumeric():
@@ -162,6 +167,10 @@ def get_bleu_score(reference_text_list, generated_text, uniform_weight, ngram_or
     :param use_token: if use token level or not
     :return: a bleu score
     """
+    
+    if len(generated_text) == 0:
+        return np.nan
+    
     # split sentences into tokens
     references_tokens = []
     for sent in reference_text_list:
@@ -206,6 +215,9 @@ def get_summary_rouge_score(reference_text_list, generated_text, gram_type="LCS"
     :param gram_type: unigram, bigram, or LCS(Longest Common Subsequence);
     :return: a rouge score
     """
+    if len(generated_text) == 0:
+        return np.nan
+    
     specific_scores = []
     specific_score = None
     summary_rouge_score = None
@@ -244,6 +256,9 @@ def get_summary_bert_score(reference_text_list, generated_text, summary_type="me
     :param generated_text: generated line of lyrics
     :return: bert score (summary if there are multiple references)
     """
+    if len(generated_text) == 0:
+        return np.nan
+    
     f1s = []
     summary_bert_score = None
 
@@ -293,6 +308,9 @@ def get_lexical_diversity(generated_text, compute_type="Simple TTR"):
         "MABI" (Measure of lexical textual diversity - moving average, bi-directional)
     :return:
     """
+    if len(generated_text) == 0:
+        return np.nan
+    
     # tok = ld.tokenize(generated_text)
     flt = ld.flemmatize(generated_text)
     # print(flt)
@@ -335,6 +353,9 @@ def check_plagiarism(reference_text_list, generated_text):
     :param generated_text: a line of lyrics, string
     :return:
     """
+    if len(generated_text) == 0:
+        return np.nan
+    
     if generated_text in reference_text_list:
         return True
     else:

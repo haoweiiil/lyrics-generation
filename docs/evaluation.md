@@ -1,12 +1,23 @@
 # Evaluating saved prediction results
 
-Assuming prediction results are saved in txt files, we can use **"outputs/evaluations_scores_cat_word_lstm_test.txt"** function in *evaluations.py* script to compute the evaluation metrics for all generated lyrics. Run the following script in python console, and evaluation results will be saved in specified "result_path".
+Assuming prediction results are saved in txt files, we can use **"output_group_eval_scores"** function to compute the evaluation metrics for all generated lyrics. Run the following script in python console, and evaluation results will be saved in "outputs/evaluations_scores_**model_name**.txt", where model_name can be "baseline_model", "exp_lstm_model", or "gpt_model". This is specified via variable "eval_path".
 
 The following script can be used for all model prediction result by changing "model_pred_path" to reflect desired model result. 
 
+    ## Evaluating baseline model
+    model_pred_path = "outputs/predictions_baseline.txt"
+    eval_path = "baseline_model"
+    
+    ## Evaluating expanded LSTM model
+    model_pred_path = "outputs/predictions_exp_lstm.txt"
+    eval_path = "exp_lstm_model"
+    
+    ## Evaluating fine-tuned GPT model
+    model_pred_path = 
+    eval_path = "gpt_model"
+    
     with open(model_pred_path, "r") as f:
         prediction_examples = json.load(f)
-    scores = output_group_eval_scores("baseline_model", prediction_examples)
-    result_path = "outputs/evaluations_scores_cat_word_lstm_test.txt"
-    with open(result_path, "w") as f_eval:
-        json.dump(scores, f_eval, indent=4)
+    scores = output_group_eval_scores(eval_path, prediction_examples)
+    # print average evaluation scores
+    print(scores["mean"])

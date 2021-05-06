@@ -13,7 +13,7 @@ The following script can be used for all model prediction result by changing "mo
     eval_path = "exp_lstm_model"
     
     ## Evaluating fine-tuned GPT model
-    model_pred_path = 
+    model_pred_path = "outputs/predictions_examples_gpt2_6000.txt"
     eval_path = "gpt_model"
     
     with open(model_pred_path, "r") as f:

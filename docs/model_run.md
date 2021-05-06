@@ -6,9 +6,9 @@ For LSTM models discussed below, we have saved the model parameters, and therefo
 
 ### I. Loading saved model
 
-1. First, please download the [saved model]() to folder *saved_data*. Then run the following script in Python console.
+1. First, please download the [saved model](https://drive.google.com/drive/folders/1VlpxPyEnoXo9VgdSMvubMa9WP0bvd2fu?usp=sharing) to folder *saved_model*. Then run the following script in Python console.
 
-2. Then make sure the dataset dictionaries are saved in folder *saved_data* as well.
+2. Then make sure the dataset dictionaries are saved in folder *saved_data*; they can downloaded from [Google Drive](https://drive.google.com/drive/folders/1vbUooe7-E7rltR5wMpJNN7lTDUn62afQ?usp=sharing).
 
 
         from main import *
@@ -34,13 +34,13 @@ For LSTM models discussed below, we have saved the model parameters, and therefo
     
         # Loading baseline LSTM model             
         baseline_model = WordLSTM(spec_dict, ds)
-        path = 'saved_data/word_lstm2.4'
+        path = 'saved_model/word_lstm2.4'
         checkpoint = torch.load(path)
         baseline_model.load_state_dict(checkpoint['model_state_dict'])
         
         # Loading Expanded LSTM model
         exp_lstm_model = WordSequence(spec_dict, ds)
-        path = 'saved_data/wordchar2.2'
+        path = 'saved_model/wordchar2.2'
         checkpoint = torch.load(path)
         exp_lstm_model.load_state_dict(checkpoint['model_state_dict'])
  
@@ -71,7 +71,7 @@ To switch between the baseline and expanded version of LSTM model, simply change
     with open(eval_out_path, "w") as f_pred:
         json.dump(prediction_examples, f_pred, indent=4)
 
-Alternatively, the *main.py* script is currently configured to train and predict baseline model. The following command line should initiate the process. Please note that the training process is time-consuming. We suggest loading the saved models instead.
+Alternatively, the *main.py* script is currently configured to load baseline model, generate prediction and print evaluation result. The following command line should initiate the process. We would advise against re-starting the training process since it would take quite some time, and instead run the saved models. 
     
     $ python main.py 
      

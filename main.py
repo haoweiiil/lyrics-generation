@@ -380,9 +380,9 @@ if __name__ == "__main__":
     vocab_size = ds.tokenize_corpus(word_tokenize)
     ds.load_dict()
     print("Successfully built dataset...")
-    print("index of new line character: ", ds.word2idx['\n'])
-    print("index of comma: ", ds.word2idx[','])
-    print("index of <UNK>: ", ds.word2idx['<UNK>'])
+    # print("index of new line character: ", ds.word2idx['\n'])
+    # print("index of comma: ", ds.word2idx[','])
+    # print("index of <UNK>: ", ds.word2idx['<UNK>'])
     # input_list = gen_multibatch_input(ds, file_path='./data/csv/train.csv', subset=['R&B'], num_lines=2, batch_size=3)
     # print("batch size: ", len(input_list[0]))
     # tensors = batchify_sequence_labeling(input_list)
@@ -393,16 +393,16 @@ if __name__ == "__main__":
     # result = batchify_sequence_labeling(input_list)
     # print(result)
 
-    model = WordSequence(spec_dict, ds)
-    optimizer = optim.Adam(model.parameters(), lr=spec_dict['learning rate'])
-    path = 'saved_data/wordchar2.1'
-    checkpoint = torch.load(path)
-    model.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    model, loss_list = train(model, optimizer, ds, spec_dict, num_lines=3, batch_size=50, word_lstm=False)
-    path = 'saved_data/wordchar2.2'
-    torch.save({'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict()}, path)
+    # model = WordSequence(spec_dict, ds)
+    # optimizer = optim.Adam(model.parameters(), lr=spec_dict['learning rate'])
+    # path = 'saved_data/wordchar2.2'
+    # checkpoint = torch.load(path)
+    # model.load_state_dict(checkpoint['model_state_dict'])
+    # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    # model, loss_list = train(model, optimizer, ds, spec_dict, num_lines=3, batch_size=50, word_lstm=False)
+    # path = 'saved_data/wordchar2.2'
+    # torch.save({'model_state_dict': model.state_dict(),
+    #             'optimizer_state_dict': optimizer.state_dict()}, path)
     ## Predict using concatenated word representation model
     # word_lstm = False
     # prediction_examples = {}
@@ -411,18 +411,19 @@ if __name__ == "__main__":
     #     prediction_examples[i] = [generated, target, input]
     # with open("outputs/predictions_examples_cat_word_lstm_test.txt", "w") as f_pred:
     #     json.dump(prediction_examples, f_pred, indent=4)
-    with open("outputs/predictions_examples_cat_word_lstm_test.txt", "r") as f:
-        prediction_examples = json.load(f)
-    scores = output_group_eval_scores("cat_word_lstm_test", prediction_examples)
-    print(scores)
-    with open("outputs/evaluations_scores_cat_word_lstm_test.txt", "w") as f_eval:
-        json.dump(scores, f_eval, indent=4)
+    # with open("outputs/predictions_examples_cat_word_lstm_test.txt", "r") as f:
+    #     prediction_examples = json.load(f)
+    # scores = output_group_eval_scores("cat_word_lstm_test", prediction_examples)
+    # print(scores)
+    # with open("outputs/evaluations_scores_cat_word_lstm_test.txt", "w") as f_eval:
+    #     json.dump(scores, f_eval, indent=4)
 
 
-    # model = WordLSTM(spec_dict, ds)
+    model = WordLSTM(spec_dict, ds)
     # optimizer = optim.Adam(model.parameters(), lr=spec_dict['learning rate'])
-    # path = 'saved_data/word_lstm2.4'
-    # checkpoint = torch.load(path)
+    path = 'saved_model/baseline_model'
+    checkpoint = torch.load(path)
+    model.load_state_dict(checkpoint)
     # model.load_state_dict(checkpoint['model_state_dict'])
     # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     # model, loss_list = train(model, optimizer, ds, spec_dict, num_lines=3, batch_size=50, word_lstm=True)
@@ -430,19 +431,17 @@ if __name__ == "__main__":
     # torch.save({'model_state_dict': model.state_dict(),
     #             'optimizer_state_dict': optimizer.state_dict()}, path)
 
-    # plt.plot(loss_list)
-    # plt.show()
-    # word_lstm = True
-    # prediction_examples = {}
-    # for i in range(30):
-    #     generated, target, input = predict(model, ds, data_path='data/csv/test_new.csv', word_lstm=word_lstm)
-    #     prediction_examples[i] = [generated, target, input]
+    word_lstm = True
+    prediction_examples = {}
+    for i in range(30):
+        generated, target, input = predict(model, ds, data_path='data/csv/test_new.csv', word_lstm=word_lstm)
+        prediction_examples[i] = [generated, target, input]
     # with open("outputs/predictions_examples_word_lstm_test.txt", "w") as f_pred:
     #     json.dump(prediction_examples, f_pred, indent=4)
     # with open("outputs/predictions_examples_word_lstm_test.txt", "r") as f:
     #     prediction_examples = json.load(f)
-    # scores = output_group_eval_scores("word_lstm_test", prediction_examples)
-    # print(scores)
+    # scores = output_group_eval_scores("baseline_model", prediction_examples)
+    # print(scores["mean"])
     # with open("outputs/evaluations_scores_word_lstm_test.txt", "w") as f_eval:
     #     json.dump(scores, f_eval, indent=4)
 

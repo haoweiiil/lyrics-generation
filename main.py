@@ -434,14 +434,14 @@ if __name__ == "__main__":
     word_lstm = True
     prediction_examples = {}
     for i in range(30):
-        generated, target, input = predict(model, ds, data_path='data/csv/test_new.csv', word_lstm=word_lstm)
+        generated, target, input = predict(model, ds, data_path='data/csv/test_artist_subset.csv', word_lstm=word_lstm)
         prediction_examples[i] = [generated, target, input]
     # with open("outputs/predictions_examples_word_lstm_test.txt", "w") as f_pred:
     #     json.dump(prediction_examples, f_pred, indent=4)
     # with open("outputs/predictions_examples_word_lstm_test.txt", "r") as f:
     #     prediction_examples = json.load(f)
-    # scores = output_group_eval_scores("baseline_model", prediction_examples)
-    # print(scores["mean"])
+    scores = output_group_eval_scores("baseline_model", prediction_examples)
+    print(scores["mean"])
     # with open("outputs/evaluations_scores_word_lstm_test.txt", "w") as f_eval:
     #     json.dump(scores, f_eval, indent=4)
 

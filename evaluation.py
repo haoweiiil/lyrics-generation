@@ -165,7 +165,7 @@ def get_bleu_score(reference_text_list, generated_text, uniform_weight, ngram_or
     :param use_token: if use token level or not
     :return: a bleu score
     """
-    
+    smoothing_function = SmoothingFunction().method4
     if len(generated_text) == 0:
         return np.nan
     

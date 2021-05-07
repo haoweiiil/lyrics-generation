@@ -124,18 +124,23 @@ def check_rhyme_phyme(input_text, generated_text, include_consonant=False, print
     :param include_consonant: consonant is the least rigorous type of rhyme; if false, will not include words here
     :param print_list: print the final list to compare with or not
     """
+    if len(generated_text) == 0:
+        return np.nan
+
     input_text = re.sub(r"[^\w\d'\s]+", '', input_text)
     generated_text = re.sub(r"[^\w\d'\s]+", '', generated_text)
+    print(input_text, generated_text)
 
     input_last = input_text.replace("\n", "").strip().split(" ")[-1]
-    generated_last = generated_text.split(" ")[-1]
+    generated_last = generated_text.strip().split(" ")[-1]
+    print(input_last, generated_last)
 
     # check if the last word is a number; if so, find its words equivalence
     if generated_last.isnumeric():
         generated_last = num2words(generated_text)
 
     # get phyme words
-    union = get_rhyme_phyme(input_last, include_consonant, print_list, catch_spelling_error)
+    union = get_rhyme_phyme(input_last, include_consonant, catch_spelling_error)
 
     if print_list:
         print(union)
@@ -151,7 +156,7 @@ def check_rhyme_phyme(input_text, generated_text, include_consonant=False, print
 
 def get_bleu_score(reference_text_list, generated_text, uniform_weight, ngram_order=None,
                    weights=(0.25, 0.25, 0.25, 0.25),
-                   smoothing_function=None, auto_reweigh=False, use_token=True):
+                   auto_reweigh=True, use_token=True):
     """
     get bleu score;
     https://github.com/xzfxzfx/lyrics-generation/blob/main/evaluate.ipynb

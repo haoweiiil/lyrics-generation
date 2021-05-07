@@ -71,7 +71,7 @@ def check_rhyme_pronouncing(input_text, generated_text, print_list=False):
     return (generated_last in list_of_rhymes) or (generated_last == input_last)
 
 
-def get_rhyme_phyme(word, include_consonant=False, print_list=False,
+def get_rhyme_phyme(word, include_consonant=False,
                     catch_spelling_error=True):
     """
     built based on CMU pronouncing; https://github.com/jameswenzel/Phyme

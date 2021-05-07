@@ -30,4 +30,19 @@ The prediction files can be found in this Google Drive folder: [https://drive.go
     
     
 ## Example
-* Input: 
+* Input: "Maybe I'm wrong and I've always been that way \n Are you tied to your field, wrung out \n"
+* Target: "Have you fallen from where glory sprouts "
+* Generation: "No way you can tie me down "
+
+Result of evaluation:
+···
+{
+        "grammar_score": 0.0,
+        "rhyme": true,
+        "bleu_score": 0.42666300950103747,
+        "rouge_score": 0.14285713785714302,
+        "bert_score": 0.8246883153915405,
+        "ld_score": 1.0,
+        "plagiarism": false
+    }
+···

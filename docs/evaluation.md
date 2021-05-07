@@ -35,7 +35,7 @@ The prediction files can be found in this Google Drive folder: [https://drive.go
 * Generation: "No way you can tie me down "
 
 Result of evaluation:
-···
+```
 {
         "grammar_score": 0.0,
         "rhyme": true,
@@ -45,4 +45,4 @@ Result of evaluation:
         "ld_score": 1.0,
         "plagiarism": false
     }
-···
+```

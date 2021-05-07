@@ -1,5 +1,6 @@
 # Evaluating saved prediction results
 
+## Instruction
 Assuming prediction results are saved in txt files, we can use **"output_group_eval_scores"** function to compute the evaluation metrics for all generated lyrics. Our previously saved prediction files can be accessed in this [folder](https://drive.google.com/drive/folders/19s8hH6uYZ4V0Dgsv36rIxwobbBcSEeZD?usp=sharing). Run the following script in python console, and evaluation results will be saved in "outputs/evaluations_scores_**model_name**.txt", where model_name can be "baseline_model", "exp_lstm_model", or "gpt2_model". This is specified via variable "eval_path".
 
 The following script can be used for all model prediction result by changing "model_pred_path" to reflect desired model result. 
@@ -22,3 +23,17 @@ The prediction files can be found in this Google Drive folder: [https://drive.go
     scores = output_group_eval_scores(eval_path, prediction_examples)
     # print average evaluation scores
     print(scores["mean"])
+    
+    
+    
+    
+    
+    
+## Example
+```
+print(check_rhyme_phyme(input_text="Ah yeah you go home. \n Go on home home home home home home, \n",
+                            generated_text="yeah you go home home home home home, ",
+                            include_consonant=False, print_list=False,
+                            catch_spelling_error=True))
+```
+This code will return True.

@@ -30,10 +30,4 @@ The prediction files can be found in this Google Drive folder: [https://drive.go
     
     
 ## Example
-```
-print(check_rhyme_phyme(input_text="Ah yeah you go home. \n Go on home home home home home home, \n",
-                        generated_text="yeah you go home home home home home, ",
-                        include_consonant=False, print_list=False,
-                        catch_spelling_error=True))
-```
-This code will return True.
+* Input: 

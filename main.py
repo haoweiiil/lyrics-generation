@@ -332,32 +332,6 @@ def predict(model, dataset, num_lines = 2, gen_line = 1, data_path = "data/csv/t
 
     return pred_next_line, next_line, org_input
 
-def output_group_eval_scores(data_type, pred_dict):
-    # calculate individual scores
-    scores = {}
-    for k in pred_dict:
-        prediction, target, inp = pred_dict[k]
-        scores[k] = run_evaluations(inp, [target], prediction)
-
-    # aggregate scores
-    evaluation_metrics = ["grammar_score", "rhyme", "bleu_score", "rouge_score", "bert_score", "ld_score",
-                          "plagiarism"]
-    mean_scores = {}
-    for m in evaluation_metrics:
-        sum_scores = 0
-        count = 0
-        for k in scores:
-            if not math.isnan(scores[k][m]):
-                sum_scores += scores[k][m]
-                count += 1
-        mean_scores[m] = sum_scores/count
-
-    scores['mean'] = mean_scores
-
-    # with open("outputs/evaluations_scores_" + data_type + ".txt", "w") as f_eval:
-    #     json.dump(scores, f_eval, indent=4)
-
-    return scores
 
 if __name__ == "__main__":
     spec_dict = {"dropout": 0.5,
@@ -415,7 +389,7 @@ if __name__ == "__main__":
     # with open("outputs/predictions_examples_cat_word_lstm_test.txt", "r") as f:
     #     prediction_examples = json.load(f)
     # scores = output_group_eval_scores("cat_word_lstm_test", prediction_examples)
-    # print(scores)
+    # print(scores["mean"])
     # with open("outputs/evaluations_scores_cat_word_lstm_test.txt", "w") as f_eval:
     #     json.dump(scores, f_eval, indent=4)
 
@@ -437,7 +411,7 @@ if __name__ == "__main__":
     for i in range(30):
         generated, target, input = predict(model, ds, data_path='data/csv/test_artist_subset.csv', word_lstm=word_lstm)
         prediction_examples[i] = [generated, target, input]
-    # with open("outputs/predictions_examples_word_lstm_test.txt", "w") as f_pred:
+    # with open("outputs/predictions_examples_baseline_model.txt", "w") as f_pred:
     #     json.dump(prediction_examples, f_pred, indent=4)
     # with open("outputs/predictions_examples_word_lstm_test.txt", "r") as f:
     #     prediction_examples = json.load(f)

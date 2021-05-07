@@ -105,35 +105,16 @@ def random_lines(path, genre=None):
     return (lyric_lines[idx], lyric_lines[idx+1])
 
 
-def repeated_evaluate(model, path,genre=None,num_iterations=1):
-    ''' returns result dict, average result dict, list of target and generated texts'''
-    input_text, target_text = random_lines(path, genre=genre)
-    generated_text = model.gen_next_sent(input_text)
-    result = run_evaluations(input_text, [target_text], generated_text)
-    result_list = [result]
-    texts = (input_text, target_text, generated_text)
-    text_list = [texts]
-
-    func_list = list(result.keys())
-    value_dict = {}
-    for func in func_list:
-        value_dict[func] = np.zeros(num_iterations)
-        value_dict[func][0] = result[func]*1
+def repeated_predict(model, path,genre=None,num_iterations=1):
+    ''' returns result dict'''
+    results = {}
 
     for i in range(1,num_iterations):
         input_text, target_text = random_lines(path, genre=genre)
         generated_text = model.gen_next_sent(input_text)
-        texts = (input_text, target_text, generated_text)
-        text_list.append(texts)
-        temp_res = run_evaluations(input_text, [target_text], generated_text)
-        result_list.append(temp_res)
-        for func in func_list:
-            value_dict[func][i] = temp_res[func]
+        results[i] = [generated_text, target_text, input_text]
 
-    avg_result = {}
-    for func in func_list:
-        avg_result[func] = np.nanmean(value_dict[func])
-    return result_list, avg_result, text_list
+    return results
 
 ################################################################################
 # Model
@@ -269,14 +250,17 @@ class NgramModel(object):
 
 if __name__ == '__main__':
     m = create_ngram_model(NgramModel, 'data/csv/train.csv', 6, 0.0000001,genre='R&B')
+    print("N-gram model successfully built...")
     # input_text, target_text = random_lines('data/csv/train.csv', genre='R&B')
     # print("input text: " + input_text)
     # print("target text: " + target_text)
     # generated_text = m.gen_next_sent(input_text)
     # print("predicted text: " + generated_text)
     # print(evaluate_score(target_text, generated_text))
-    result, avg_result, text_list = repeated_evaluate(m, 'data/csv/test.csv', 'R&B', 20)
-    print(avg_result)
+    prediction_examples = repeated_predict(m, 'data/csv/test.csv', 'R&B', 20)
+    with open("outputs/predictions_examples_ngram.txt", "w") as f_pred:
+        json.dump(prediction_examples, f_pred, indent=4)
+    scores = output_group_eval_scores("ngram", prediction_examples)
     # print(train_result)
     # print(text_list)
 

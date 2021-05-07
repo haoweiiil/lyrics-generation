@@ -5,11 +5,12 @@ from rouge import Rouge
 from bert_score import score
 from bert_score import plot_example
 from lexical_diversity import lex_div as ld
-import re
+import re, math
 import json
 import requests
 from utils.utils import *
 import numpy as np
+from nltk.translate.bleu_score import SmoothingFunction
 
 # Initiate.
 
@@ -370,6 +371,33 @@ def run_evaluations(input_text, reference_text_list, generated_text):
         'ld_score': get_lexical_diversity(generated_text),
         'plagiarism': check_plagiarism(reference_text_list, generated_text)
     }
+    return scores
+
+def output_group_eval_scores(data_type, pred_dict):
+    # calculate individual scores
+    scores = {}
+    for k in pred_dict:
+        prediction, target, inp = pred_dict[k]
+        scores[k] = run_evaluations(inp, [target], prediction)
+
+    # aggregate scores
+    evaluation_metrics = ["grammar_score", "rhyme", "bleu_score", "rouge_score", "bert_score", "ld_score",
+                          "plagiarism"]
+    mean_scores = {}
+    for m in evaluation_metrics:
+        sum_scores = 0
+        count = 0
+        for k in scores:
+            if not math.isnan(scores[k][m]):
+                sum_scores += scores[k][m]
+                count += 1
+        mean_scores[m] = sum_scores/count
+
+    scores['mean'] = mean_scores
+
+    with open("outputs/evaluations_scores_" + data_type + ".txt", "w") as f_eval:
+        json.dump(scores, f_eval, indent=4)
+
     return scores
 
 

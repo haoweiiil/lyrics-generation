@@ -416,6 +416,6 @@ if __name__ == '__main__':
     # scores1 = run_evaluations(input_text1, reference_test_list1, generated_text1)
     # print(scores1)
 
-    print(check_rhyme_phyme("I am sayin", "I dont know", include_consonant=False, print_list=True,
-                            catch_spelling_error=True))
+#     print(check_rhyme_phyme("I am sayin", "I dont know", include_consonant=False, print_list=True,
+#                             catch_spelling_error=True))
 
